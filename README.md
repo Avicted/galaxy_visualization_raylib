@@ -34,7 +34,7 @@ build.bat
 
 -   Space pauses the program
 -   Added automated setup support for both Clang and GCC (build.sh)
--   Added automated setup support for Windows through build.bat and the MSVC compiler
+-   Added automated setup support for Windows through build.bat with cmake
 
 ---
 
