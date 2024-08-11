@@ -167,9 +167,10 @@ GameUpdate(f32 DeltaTime)
         }
     }
 
-    // @NOTE(Victor): Raylibs implementation of the camera is not good enough for our use case, it's too fast
-    // UpdateCamera(&MainCamera, CAMERA_ORBITAL);
+    // @Note(Victor): Raylibs implementation of the camera is not good enough for our use case, it's too fast
+    // Raylib default camera rotate: UpdateCamera(&MainCamera, CAMERA_ORBITAL);
 
+    //@Note(Victor): Custom rotation around earth
     RotateCameraAroundOrigo(DeltaTime);
 
     // Zoom the camera with mouse scroll
@@ -200,8 +201,8 @@ GameRender(f32 DeltaTime)
     DrawSphere({0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
 
     // Draw the DataPointsA ONE by one, right ascension and declination as a sphere, using celestial coordinates
-    // @NOTE(Victor): 11 fps with 1000 points with no batching. Enable this and see for yourself :)
-    /*for (i32 i = 0; i < 1000; ++i)
+    // @Note(Victor): 11 fps with 1000 points with no batching. Enable this and see for yourself :)
+    for (i32 i = 0; i < 1000; ++i)
     {
         // Translate the celestial coordinates into world coordinates around an invisible sphere that is 50.0f in radius
         Vector3 Point = {0.0f};
@@ -212,7 +213,9 @@ GameRender(f32 DeltaTime)
 
         // Batch the draw calls
         DrawSphere(Point, 0.1f, RED);
-    }*/
+
+        continue
+    }
 
     // Draw instanced meshes
     if (DataToDraw == DRAW_DATA_A || DataToDraw == DRAW_ALL_DATA)

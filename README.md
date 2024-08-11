@@ -1,6 +1,6 @@
 # Galaxy Visualization
 
-Data taken from the course GPU programming at: https://studiehandboken.abo.fi/sv/kurs/IT00CG19/19162
+Data taken from the course GPU programming at: https://studiehandboken.abo.fi/sv/kurs/IT00CG19/19162?period=2024-2027
 
 Visualization of 100k real galaxies in blue and 100k red randomly distributed galxies.
 
