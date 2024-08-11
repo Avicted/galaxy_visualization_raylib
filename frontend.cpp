@@ -167,10 +167,10 @@ GameUpdate(f32 DeltaTime)
         }
     }
 
-    // @Note(Victor): Raylibs implementation of the camera is not good enough for our use case, it's too fast
-    // Raylib default camera rotate: UpdateCamera(&MainCamera, CAMERA_ORBITAL);
+    // @Note(Victor): Raylibs implementation of the camera too fast for our use case
+    // UpdateCamera(&MainCamera, CAMERA_ORBITAL);
 
-    //@Note(Victor): Custom rotation around earth
+    // @Note(Victor): Custom rotation around earth,
     RotateCameraAroundOrigo(DeltaTime);
 
     // Zoom the camera with mouse scroll
@@ -202,20 +202,20 @@ GameRender(f32 DeltaTime)
 
     // Draw the DataPointsA ONE by one, right ascension and declination as a sphere, using celestial coordinates
     // @Note(Victor): 11 fps with 1000 points with no batching. Enable this and see for yourself :)
-    for (i32 i = 0; i < 1000; ++i)
-    {
-        // Translate the celestial coordinates into world coordinates around an invisible sphere that is 50.0f in radius
-        Vector3 Point = {0.0f};
-        Point.x = 50.0f * sinf(DataPointsA[i].right_ascension) * cosf(DataPointsA[i].declination);
-        Point.y = 50.0f * sinf(DataPointsA[i].right_ascension) * sinf(DataPointsA[i].declination);
-        Point.z = 50.0f * cosf(DataPointsA[i].right_ascension);
-        // DrawSphere(Point, 0.1f, RED);
-
-        // Batch the draw calls
-        DrawSphere(Point, 0.1f, RED);
-
-        continue
-    }
+    // for (i32 i = 0; i < 1000; ++i)
+    // {
+    //     // Translate the celestial coordinates into world coordinates around an invisible sphere that is 50.0f in radius
+    //     Vector3 Point = {0.0f};
+    //     Point.x = 50.0f * sinf(DataPointsA[i].right_ascension) * cosf(DataPointsA[i].declination);
+    //     Point.y = 50.0f * sinf(DataPointsA[i].right_ascension) * sinf(DataPointsA[i].declination);
+    //     Point.z = 50.0f * cosf(DataPointsA[i].right_ascension);
+    //     // DrawSphere(Point, 0.1f, RED);
+    //
+    //     // Batch the draw calls
+    //     DrawSphere(Point, 0.1f, RED);
+    //
+    //     continue
+    // }
 
     // Draw instanced meshes
     if (DataToDraw == DRAW_DATA_A || DataToDraw == DRAW_ALL_DATA)
@@ -305,7 +305,7 @@ CleanupOurStuff(void)
     printf("\n\tFreeing MatrixTransformsB: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
     PrintMemoryUsage();
 
-    // @NOTE(Victor): There should be no allocated memory left
+    // @Note(Victor): There should be no allocated memory left
     Assert(CPUMemory == 0);
 }
 
@@ -345,7 +345,7 @@ ReadInputDataFromFile(const char *FileName, ArcminData *DataPointsLocation)
         // printf("Retrieved line of length %zu:\n", Read);
         // printf("%s", Line);
 
-        // @NOTE(Victor): We expect the input data to be separated by tabs!!!
+        // @Note(Victor): We expect the input data to be separated by tabs !!!
         // Parse the line
         char *Token = strtok(Line, "\t");
         i32 j = 0;
@@ -414,7 +414,7 @@ i32 main(i32 argc, char **argv)
         return (1);
     }
 
-    printf("\tHello from raylib_galaxy_application!\n");
+    printf("\tHello from raylib_galaxy_application!\n\n");
 
     unsigned long int Count = 0;
     for (i32 i = 0; i < MAX_DATA_POINTS; ++i)
@@ -537,7 +537,7 @@ i32 main(i32 argc, char **argv)
         matInstances.maps[MATERIAL_MAP_DIFFUSE].color = BLUE;
     }
 
-    printf("\n\tBefore we start the game loop\n");
+    printf("\n\tMemory usage before we start the game loop\n");
     PrintMemoryUsage();
 
     // Main loop

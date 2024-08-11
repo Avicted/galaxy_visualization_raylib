@@ -41,11 +41,12 @@ typedef float f32;
 typedef double f64;
 
 // Macros ------------------------
-// Write straight to the null pointer to crash the program
+// @Note(Victor): Write straight to the null pointer to crash the program
+// @Note(Victor): *(int *)0 = 0;
 #define Assert(Expression) \
     if (!(Expression))     \
     {                      \
-        *(int *)0 = 0;     \
+        __builtin_trap();  \
     }
 
 #define ArrayCount(Array) (sizeof(Array) / sizeof((Array)[0]))

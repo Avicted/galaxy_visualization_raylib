@@ -32,6 +32,8 @@ CORES=$(nproc --all)
 CORES=$((CORES / 2))
 echo "Using $CORES cores for compilation"
 
+echo "Building Raylib + galaxy_visualization_raylib"
+
 echo ""
 cmake -S ./ -B build -DCMAKE_BUILD_TYPE=Release  -DCMAKE_EXPORT_COMPILE_COMMANDS=ON -DCMAKE_C_COMPILER=$CC -DCMAKE_CXX_COMPILER=$CXX
 cmake --build ./build --config Release --target all -- -j $CORES

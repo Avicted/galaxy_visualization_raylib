@@ -1,6 +1,6 @@
 ﻿cmake_minimum_required(VERSION 3.11) # FetchContent is available in 3.11+
 
-project(galaxy_visualization_raylib VERSION 0.1.0 LANGUAGES CXX)
+project(galaxy_visualization_raylib VERSION 0.1.1 LANGUAGES CXX)
 
 if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
@@ -94,7 +94,6 @@ add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/input_data $<TARGET_FILE_DIR:${PROJECT_NAME}>/input_data)
-
 
 # Copy the shaders dir
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
