@@ -35,7 +35,7 @@ const char *DataBFilename = "./input_data/flat_100k_arcmin.txt";
 
 Font MainFont = {0};
 
-Camera3D MainCamera = {0};
+Camera3D MainCamera = {};
 f32 Zoom = 1.3f;
 
 const unsigned long int MAX_DATA_POINTS = 100000UL;
@@ -428,7 +428,7 @@ i32 main(i32 argc, char **argv)
     printf("\tHello from raylib_galaxy_application!\n\n");
 
     unsigned long int Count = 0;
-    for (i32 i = 0; i < MAX_DATA_POINTS; ++i)
+    for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
     {
         if (DataPointsA[i].right_ascension != 0.0f)
         {
@@ -440,7 +440,7 @@ i32 main(i32 argc, char **argv)
     Assert(DataPointsB != NULL);
 
     Count = 0;
-    for (i32 i = 0; i < MAX_DATA_POINTS; ++i)
+    for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
     {
         if (DataPointsB[i].right_ascension != 0.0f)
         {
@@ -469,7 +469,7 @@ i32 main(i32 argc, char **argv)
 
         Matrix rotation = MatrixRotateXYZ({0.0f, 0.0f, 0.0f});
 
-        for (i32 i = 0; i < MAX_DATA_POINTS; ++i)
+        for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
         {
             // DataPointsA real galaxies
             {

@@ -6,13 +6,11 @@ if (POLICY CMP0048)
   cmake_policy(SET CMP0048 NEW)
 endif (POLICY CMP0048)
 
-# Set the cpp standard to
+# Set the C++ standard
 set(CMAKE_CXX_STANDARD 20)
-
 
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 
 include(FetchContent)
 
@@ -28,9 +26,8 @@ function(add_git_dependency libName gitURL gitTag)
         GIT_PROGRESS   TRUE
     )
     FetchContent_MakeAvailable(${libName})
-    target_compile_options(${libName} PRIVATE "-w")
+    target_compile_options(${libName} PRIVATE "-w") # Disable warnings for the dependency
 endfunction()
-
 
 # Add Raylib
 set(BUILD_EXAMPLES OFF CACHE BOOL "" FORCE) # don't build the supplied examples
@@ -45,30 +42,42 @@ add_git_dependency(
 
 # Our Project
 
-# Set compile flags 
-
 # Print the OS
 message(STATUS "----------------------------------------------")
 message(STATUS "CMAKE_SYSTEM_NAME: ${CMAKE_SYSTEM_NAME}")
 message(STATUS "----------------------------------------------")
 
-# If linux, set the compile flags
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wc99-extensions -Wno-unused-parameter -Wno-unused-variable -Wno-unused-function -Wno-unused-const-variable -Wno-unused-lambda-capture -Wno-unused-local-typedef -Wno-unused-value -Wno-unused-const-variable")
-endif()
-
-# If windows, set the compile flags for msvc
-if (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-endif()
-
-# print the compile flags
-message(STATUS "----------------------------------------------")
-message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
-message(STATUS "----------------------------------------------")
-
+# Add your executable
 add_executable(${PROJECT_NAME} frontend.cpp)
+
+# Link against raylib
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)
+
+# Set compile flags specific to your project
+if (${CMAKE_SYSTEM_NAME} STREQUAL "Linux")
+    target_compile_options(${PROJECT_NAME} PRIVATE 
+        -Wall 
+        -Wextra 
+        -Wpedantic 
+        -Werror 
+        -Wno-unused-parameter 
+        -Wno-unused-variable 
+        -Wno-unused-function 
+        -Wno-unused-but-set-variable 
+        -Wno-unused-value 
+        -Wno-unused-result 
+        -Wno-unused-local-typedefs 
+        -Wno-missing-field-initializers
+    )
+elseif (${CMAKE_SYSTEM_NAME} STREQUAL "Windows")
+    target_compile_options(${PROJECT_NAME} PRIVATE /W4) # Example for MSVC
+endif()
+
+# Print the compile flags for your target
+get_target_property(PROJECT_COMPILE_FLAGS ${PROJECT_NAME} COMPILE_OPTIONS)
+message(STATUS "----------------------------------------------")
+message(STATUS "Compile flags for ${PROJECT_NAME}: ${PROJECT_COMPILE_FLAGS}")
+message(STATUS "----------------------------------------------")
 
 # -------------------------------------------------------------------------------------
 
@@ -85,17 +94,15 @@ if (APPLE)
     target_link_libraries(${PROJECT_NAME} "-framework OpenGL")
 endif()
 
-# copy the fonts folder to the build directory
+# Copy resources to the build directory after build
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/fonts $<TARGET_FILE_DIR:${PROJECT_NAME}>/fonts)
 
-# copy the input_data folder to the build directory
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/input_data $<TARGET_FILE_DIR:${PROJECT_NAME}>/input_data)
 
-# Copy the shaders dir
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
     ${CMAKE_SOURCE_DIR}/shaders $<TARGET_FILE_DIR:${PROJECT_NAME}>/shaders)
