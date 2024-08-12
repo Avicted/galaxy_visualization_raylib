@@ -23,11 +23,14 @@ Linux:
 # bash gcc / Clang, build and run
 ./build.sh
 
-# Build Raylib + Galaxy Visualization and run
-make all
+# Build Raylib + Galaxy Visualization + Run the exicutable program
+make
 
 # Run the exicutable program, after building
 make run
+
+# Only rebuild the Galaxy Visualization
+make rebuild
 
 # Clean the build directory
 make clean
