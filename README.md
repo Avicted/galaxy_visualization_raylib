@@ -6,7 +6,7 @@ Visualization of 100k real galaxies in blue and 100k red randomly distributed ga
 
 
 # Prerequisites
-The project has has been setup with CMake, you can build the project with bash, make or meson.
+The project has has been setup with CMake, you can build the project with either build.sh, Meson, Make, CMake or build.bat.
 
 ```bash
 base-devel cmake clang git
