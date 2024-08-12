@@ -6,23 +6,39 @@ Visualization of 100k real galaxies in blue and 100k red randomly distributed ga
 
 
 # Prerequisites
-The project has has been setup with CMake, you can build the project with bash or make on Linux and with the build.bat on Windows.
+The project has has been setup with CMake, you can build the project with bash, make or meson.
 
 ```bash
 base-devel cmake clang git
 ```
 
-# Build and run
+# Build and run the project
 
-Linux:
+Choose one of the following options:
 
+# Linux:
+
+## CMake with gcc / Clang 
 ```bash
 # Tested on: 
 # Linux rayleigh 6.10.3-1-MANJARO - x86_64 GNU/Linux
 
 # bash gcc / Clang, build and run
 ./build.sh
+```
 
+## Meson
+```bash
+# Meson
+# Setup the build directory
+meson setup build --buildtype=release
+
+# Build the project and run it
+meson compile -C build && ./build/galaxy_visualization_raylib
+```
+
+## Make
+```bash
 # Build Raylib + Galaxy Visualization + Run the exicutable program
 make
 
@@ -36,7 +52,7 @@ make rebuild
 make clean
 ```
 
-Windows:
+## Windows
 
 ```cmd
 build.bat
@@ -53,6 +69,7 @@ build.bat
 -   Added automated setup support for both Clang and GCC (build.sh)
 -   Added automated setup support for Windows through build.bat with cmake
 -   Added Makefile for Linux
+-   Added Meson build system for Linux
 
 ---
 
