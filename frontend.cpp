@@ -26,6 +26,7 @@ i32 ScreenHeight = 360 * 2;
 bool Debug = false;
 bool DataAIsLoaded = false;
 bool IsPaused = false;
+bool FreeLook = false;
 
 i64 CPUMemory = 0L;
 
@@ -35,7 +36,7 @@ const char *DataBFilename = "./input_data/flat_100k_arcmin.txt";
 Font MainFont = {0};
 
 Camera3D MainCamera = {0};
-f32 Zoom = 1.0f;
+f32 Zoom = 1.3f;
 
 const unsigned long int MAX_DATA_POINTS = 100000UL;
 
@@ -114,20 +115,44 @@ RotateCameraAroundOrigo(f32 DeltaTime)
     Camera3D *Cam = &MainCamera;
     f32 Radius = 50.0f;
     f32 Speed = 0.2f;
+    f32 VerticalSpeed = 0.1f; // Adjust this to control vertical sensitivity
+
     local_persist f32 PreviousTimeSinceStart = 0.0f;
+    local_persist bool initializedFreeLook = false;
+    local_persist Vector3 InitialCameraPosition;
 
-    // Store the initial camera position
-    local_persist Vector3 InitialCameraPosition = {0.0f, 25.0f * Zoom, 0.0f};
-
-    if (!IsPaused)
+    if (FreeLook)
     {
-        PreviousTimeSinceStart += DeltaTime;
-    }
+        if (!initializedFreeLook)
+        {
+            // Initialize the initial camera position based on the current camera position
+            InitialCameraPosition = Cam->position;
+            PreviousTimeSinceStart = atan2f(Cam->position.z, Cam->position.x); // Ensure continuity in rotation
+            initializedFreeLook = true;
+        }
 
-    // Calculate the camera's new position
-    Cam->position.x = InitialCameraPosition.x + Radius * cos(PreviousTimeSinceStart * Speed) * Zoom;
-    Cam->position.y = InitialCameraPosition.y;
-    Cam->position.z = InitialCameraPosition.z + Radius * sin(PreviousTimeSinceStart * Speed) * Zoom;
+        Vector2 mouseDelta = GetMouseDelta();
+        PreviousTimeSinceStart += DeltaTime * Speed * mouseDelta.x;
+
+        // Update camera position based on mouse delta (x for horizontal, y for vertical)
+        Cam->position.x = InitialCameraPosition.x * cosf(PreviousTimeSinceStart) * Zoom;
+        Cam->position.y = InitialCameraPosition.y + mouseDelta.y * VerticalSpeed;
+        Cam->position.z = InitialCameraPosition.z * sinf(PreviousTimeSinceStart) * Zoom;
+
+        Cam->target = Vector3Zero();
+    }
+    else
+    {
+        initializedFreeLook = false; // Reset the flag when not in free look mode
+
+        PreviousTimeSinceStart += DeltaTime * Speed;
+
+        Cam->position.x = Radius * cosf(PreviousTimeSinceStart) * Zoom;
+        Cam->position.y = 50.0f;
+        Cam->position.z = Radius * sinf(PreviousTimeSinceStart) * Zoom;
+
+        Cam->target = Vector3Zero();
+    }
 }
 
 internal void
@@ -135,51 +160,46 @@ GameUpdate(f32 DeltaTime)
 {
     HandleWindowResize();
 
-    // Handle input
+    if (IsKeyPressed(KEY_ESCAPE))
     {
-        if (IsKeyPressed(KEY_ESCAPE))
-        {
-            CloseWindow();
-        }
-
-        if (IsKeyPressed(KEY_F11))
-        {
-            ToggleFullscreen();
-        }
-
-        if (IsKeyPressed(KEY_ONE))
-        {
-            DataToDraw = DRAW_DATA_A;
-        }
-
-        if (IsKeyPressed(KEY_TWO))
-        {
-            DataToDraw = DRAW_DATA_B;
-        }
-
-        if (IsKeyPressed(KEY_THREE))
-        {
-            DataToDraw = DRAW_ALL_DATA;
-        }
-        if (IsKeyPressed(KEY_SPACE))
-        {
-            IsPaused = !IsPaused;
-        }
+        CloseWindow();
     }
 
-    // @Note(Victor): Raylibs implementation of the camera too fast for our use case
-    // UpdateCamera(&MainCamera, CAMERA_ORBITAL);
+    if (IsKeyPressed(KEY_F11))
+    {
+        ToggleFullscreen();
+    }
 
-    // @Note(Victor): Custom rotation around earth,
+    if (IsKeyPressed(KEY_ONE))
+    {
+        DataToDraw = DRAW_DATA_A;
+    }
+
+    if (IsKeyPressed(KEY_TWO))
+    {
+        DataToDraw = DRAW_DATA_B;
+    }
+
+    if (IsKeyPressed(KEY_THREE))
+    {
+        DataToDraw = DRAW_ALL_DATA;
+    }
+
+    if (IsKeyPressed(KEY_SPACE))
+    {
+        IsPaused = !IsPaused;
+        FreeLook = !FreeLook;
+        printf("\tIsPaused: %s\n", IsPaused ? "true" : "false");
+    }
+
     RotateCameraAroundOrigo(DeltaTime);
 
-    // Zoom the camera with mouse scroll
     f32 Scroll = GetMouseWheelMove();
-
     if (Scroll != 0.0f)
     {
-        f32 Speed = -0.5f;
-        Zoom = Clamp(Zoom + Scroll * Speed * DeltaTime, 0.0f, 2.0f);
+        const float ZoomChange = -2.5f;
+        f32 Speed = ZoomChange;
+        Zoom = Clamp(Zoom + Scroll * Speed * DeltaTime, 0.0f, 10.0f);
     }
 }
 
@@ -199,23 +219,6 @@ GameRender(f32 DeltaTime)
 
     // Draw a earth sphere
     DrawSphere({0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
-
-    // Draw the DataPointsA ONE by one, right ascension and declination as a sphere, using celestial coordinates
-    // @Note(Victor): 11 fps with 1000 points with no batching. Enable this and see for yourself :)
-    // for (i32 i = 0; i < 1000; ++i)
-    // {
-    //     // Translate the celestial coordinates into world coordinates around an invisible sphere that is 50.0f in radius
-    //     Vector3 Point = {0.0f};
-    //     Point.x = 50.0f * sinf(DataPointsA[i].right_ascension) * cosf(DataPointsA[i].declination);
-    //     Point.y = 50.0f * sinf(DataPointsA[i].right_ascension) * sinf(DataPointsA[i].declination);
-    //     Point.z = 50.0f * cosf(DataPointsA[i].right_ascension);
-    //     // DrawSphere(Point, 0.1f, RED);
-    //
-    //     // Batch the draw calls
-    //     DrawSphere(Point, 0.1f, RED);
-    //
-    //     continue
-    // }
 
     // Draw instanced meshes
     if (DataToDraw == DRAW_DATA_A || DataToDraw == DRAW_ALL_DATA)
@@ -256,17 +259,25 @@ GameRender(f32 DeltaTime)
     // Press space to pause in the center bottom
     if (IsPaused)
     {
-        DrawTextEx(MainFont, TextFormat("Press space to continue"), {ScreenWidth / 2.0f - 150.0f, ScreenHeight - 30.0f}, 20, 2, GREEN);
+        DrawTextEx(MainFont, TextFormat("Paused"), {ScreenWidth / 2.0f - 64.0f, ScreenHeight - 30.0f}, 20, 2, RED);
     }
     else
     {
-        DrawTextEx(MainFont, TextFormat("Press space to pause"), {ScreenWidth / 2.0f - 120.0f, ScreenHeight - 30.0f}, 20, 2, WHITE);
+        // Highlight the paused text
+        DrawTextEx(MainFont, TextFormat("Auto Camera Active"), {ScreenWidth / 2.0f - 128.0f, ScreenHeight - 30.0f}, 20, 2, GREEN);
     }
 
-    // Draw the IsPaused state in the top right corner
-    if (IsPaused)
+    if (FreeLook)
     {
-        DrawTextEx(MainFont, TextFormat("Paused"), {ScreenWidth - 150.0f, 10}, 20, 2, RED);
+        const char *FreeLookText = "Free Look";
+        const int FreeLookTextLength = strlen(FreeLookText);
+        DrawTextEx(MainFont, FreeLookText, {ScreenWidth - 128.0f - 64.0f, 30}, 20, 2, GREEN);
+    }
+    else
+    {
+        const char *FreeLookText = "Auto Look";
+        const int FreeLookTextLength = strlen(FreeLookText);
+        DrawTextEx(MainFont, FreeLookText, {ScreenWidth - 64.0f - 128.0f - 32.0f, 30}, 20, 2, RED);
     }
 
     EndDrawing();
@@ -319,7 +330,7 @@ SigIntHandler(i32 Signal)
     exit(0);
 }
 
-static bool
+local_persist bool
 ReadInputDataFromFile(const char *FileName, ArcminData *DataPointsLocation)
 {
     FILE *f = fopen(FileName, "r");
@@ -445,7 +456,7 @@ i32 main(i32 argc, char **argv)
     MainCamera.position = {0.0f, 50.0f, 100.0f};
     MainCamera.target = {0.0f, 0.0f, 0.0f};
     MainCamera.up = {0.0f, 1.0f, 0.0f};
-    MainCamera.fovy = 120.0f;
+    MainCamera.fovy = 75.0f; // Adjust if necessary
     MainCamera.projection = CAMERA_PERSPECTIVE;
 
     // Define transforms to be uploaded to GPU for instances
