@@ -10,7 +10,7 @@ The project has has been setup with CMake, you can build the project with either
 
 ```bash
 # Tested on:
-# Linux rayleigh 6.10.3-1-MANJARO #1 SMP PREEMPT_DYNAMIC | x86_64 GNU/Linux
+# Linux 6.10.3-1-MANJARO | x86_64 GNU/Linux
 base-devel meson git cmake clang  
 ```
 
@@ -29,7 +29,7 @@ chmod +x meson_build_and_run.sh
 ## CMake with gcc / Clang 
 ```bash
 # Tested on: 
-# Linux rayleigh 6.10.3-1-MANJARO - x86_64 GNU/Linux
+# Linux 6.10.3-1-MANJARO - x86_64 GNU/Linux
 
 # bash gcc / Clang, build and run
 ./build.sh
