@@ -18,13 +18,10 @@ if host_machine.system() == 'linux'
         '-Wno-unused-but-set-variable'
     ], language: 'cpp')
 elif host_machine.system() == 'windows'
-    # MSVC specific flags can be added here
-    add_project_arguments([
-        '/W4'  # Example warning level for MSVC
-    ], language: 'cpp')
+    add_project_arguments(['/W4'], language: 'cpp')
 endif
 
-# Fetching dependencies
+# Fetch Raylib using CMake
 raylib_dep = dependency('raylib', method: 'cmake', required: true)
 
 # Executable definition
@@ -34,7 +31,6 @@ executable('galaxy_visualization_raylib', 'frontend.cpp',
 )
 
 # Install directories and resources
-# Copying directories to the build directory
 fonts_copy = custom_target(
   'copy_fonts',
   output: 'fonts',
@@ -55,4 +51,3 @@ copy_shaders = custom_target(
   command: ['cp', '-r', meson.source_root() / 'shaders', meson.build_root() / 'shaders'],
   build_by_default: true
 )
-

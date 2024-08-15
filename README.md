@@ -9,7 +9,9 @@ Visualization of 100k real galaxies in blue and 100k red randomly distributed ga
 The project has has been setup with CMake, you can build the project with either build.sh, Meson, Make, CMake or build.bat.
 
 ```bash
-base-devel cmake clang git
+# Tested on:
+# Linux rayleigh 6.10.3-1-MANJARO #1 SMP PREEMPT_DYNAMIC | x86_64 GNU/Linux
+base-devel meson git cmake clang  
 ```
 
 # Build and run the project
@@ -18,6 +20,12 @@ Choose one of the following options:
 
 # Linux:
 
+## Meson - fastest build time
+```bash
+chmod +x meson_build_and_run.sh   
+./meson_build_and_run.sh
+```
+
 ## CMake with gcc / Clang 
 ```bash
 # Tested on: 
@@ -25,16 +33,6 @@ Choose one of the following options:
 
 # bash gcc / Clang, build and run
 ./build.sh
-```
-
-## Meson
-```bash
-# Meson
-# Setup the build directory
-meson setup build --buildtype=release
-
-# Build the project and run it
-meson compile -C build && ./build/galaxy_visualization_raylib
 ```
 
 ## Make
