@@ -11,6 +11,7 @@ The project has has been setup with CMake, you can build the project with either
 ```bash
 # Tested on:
 # Linux 6.10.3-1-MANJARO | x86_64 GNU/Linux
+
 pacman -S base-devel meson git cmake clang  
 ```
 
@@ -22,6 +23,9 @@ Choose one of the following options:
 
 ## Meson - fastest build time
 ```bash
+# Tested on:
+# Linux 6.10.3-1-MANJARO | x86_64 GNU/Linux
+
 chmod +x meson_build_and_run.sh   
 ./meson_build_and_run.sh
 ```
@@ -37,6 +41,9 @@ chmod +x meson_build_and_run.sh
 
 ## Make
 ```bash
+# Tested on:
+# Linux 6.10.3-1-MANJARO | x86_64 GNU/Linux
+
 # Build Raylib + Galaxy Visualization + Run the exicutable program
 make
 
