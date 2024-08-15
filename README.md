@@ -11,7 +11,7 @@ The project has has been setup with CMake, you can build the project with either
 ```bash
 # Tested on:
 # Linux 6.10.3-1-MANJARO | x86_64 GNU/Linux
-base-devel meson git cmake clang  
+pacman -S base-devel meson git cmake clang  
 ```
 
 # Build and run the project
