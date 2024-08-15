@@ -68,6 +68,7 @@ build.bat
 -   Added automated setup support for Windows through build.bat with cmake
 -   Added Makefile for Linux
 -   Added Meson build system for Linux
+-   Added The Meson build now downloads and builds Raylib
 
 ---
 
