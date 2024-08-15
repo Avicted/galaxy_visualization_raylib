@@ -15,7 +15,7 @@ The project has has been setup with CMake, you can build the project with either
 pacman -S base-devel meson git cmake clang  
 
 # Ubuntu
-sudo apt-get -y install meson git cmake clang
+sudo apt-get -y install build-essential meson git cmake clang
 ```
 
 # Build and run the project
