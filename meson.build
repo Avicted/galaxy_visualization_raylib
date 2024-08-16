@@ -1,12 +1,20 @@
-project('galaxy_visualization_raylib', 'cpp', version: '0.1.1', default_options: ['cpp_std=c++20'])
+project(
+  'galaxy_visualization_raylib', 
+  'cpp', 
+  version: '0.2.0', 
+  default_options: [
+    'cpp_std=c++20',
+    'warning_level=3',
+    'buildtype=release',
+    'optimization=2'
+  ],
+)
 
 # Compiler options based on system type
-if host_machine.system() == 'linux'
+if host_machine.system() == 'linux' or host_machine.system() == 'darwin' # macOS
     add_project_arguments([
-        '-Wall',
-        '-Wextra',
         '-Wpedantic',
-        '-Werror',
+      
         '-Wno-unused-parameter',
         '-Wno-unused-variable',
         '-Wno-unused-function',
@@ -21,13 +29,13 @@ elif host_machine.system() == 'windows'
     add_project_arguments(['/W4'], language: 'cpp')
 endif
 
-# Fetch Raylib using CMake
-raylib_dep = dependency('raylib', method: 'cmake', required: true)
+# Find the system-installed Raylib library
+raylib_dep = dependency('raylib', required: true)
 
 # Executable definition
 executable('galaxy_visualization_raylib', 'frontend.cpp',
     dependencies: raylib_dep,
-    install: true
+    install: false,
 )
 
 # Install directories and resources
