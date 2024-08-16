@@ -32,26 +32,48 @@ sudo apt-get install -y raylib build-essential meson git cmake clang
 ### Build and Run the Project
 
 You can choose from one of the following build systems:
+- Meson
+- Make with CMake
 
+
+## Meson
+#### Setup:
 ```bash
-meson setup build --buildtype=release
-
-meson compile -C build && ./build/galaxy_visualization_raylib
+meson setup build --buildtype=release 
 ```
 
+#### Build:
+```bash
+meson compile -C build
+```
+
+#### Run:
+```bash
+./build/galaxy_visualization_raylib
+```
+
+#### Clean:
+```bash
+meson compile -C build --clean
+```
+
+
+## Make
+#### Build:
 ```bash
 make
+```
 
+#### Run:
+```bash
 make run
+```
 
+#### Clean:
+```bash
 make clean
 ```
 
-#### Windows
-
-```powershell
-build.bat
-```
 
 
 ##  Demo
@@ -65,8 +87,6 @@ build.bat
 ## Patch Notes
 
 - Spacebar: Pauses the program.
-- Added automated setup support for both Clang and GCC (build.sh).
-- Added automated setup support for Windows through build.bat with CMake.
 - Added Makefile for Linux.
 - Added Meson build system for Linux.
 - The Meson build now links against the system-installed Raylib.
