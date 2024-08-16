@@ -40,13 +40,10 @@ meson compile -C build && ./build/galaxy_visualization_raylib
 ```
 
 ```bash
-# Build the project
 make
 
-# Run the executable after building
 make run
 
-# Clean the build directory
 make clean
 ```
 
