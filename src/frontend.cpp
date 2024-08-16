@@ -2,8 +2,8 @@
 #define RLIGHTS_IMPLEMENTATION
 
 // Includes ----------------------------------------------------------------------
-#include "includes/includes.h"
-#include "includes/raylib_includes.h"
+#include "includes.h"
+#include "raylib_includes.h"
 
 // Types -------------------------------------------------------------------------
 struct ArcminData

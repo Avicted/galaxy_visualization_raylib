@@ -56,11 +56,11 @@ build.bat
 
 ##  Demo
 
-![demo](demo.gif "demo.gif")
+![demo](images/demo.gif "demo.gif")
 
 ---
 
-![screen](screenshot.png "screenshot.png")
+![screen](images/screenshot.png "screenshot.png")
 
 ## Patch Notes
 

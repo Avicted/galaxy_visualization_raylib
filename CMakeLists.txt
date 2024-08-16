@@ -12,6 +12,9 @@ set(CMAKE_CXX_STANDARD 20)
 # Generate compile_commands.json
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
+# Includes dir
+include_directories(${CMAKE_SOURCE_DIR}/includes)
+
 # -------------------------------------------------------------------------------------
 
 # Print the OS
@@ -22,8 +25,9 @@ message(STATUS "----------------------------------------------")
 # Find the system-installed Raylib library
 find_package(raylib REQUIRED)
 
+
 # Add your executable
-add_executable(${PROJECT_NAME} frontend.cpp)
+add_executable(${PROJECT_NAME} src/frontend.cpp)
 
 # Link against raylib
 target_link_libraries(${PROJECT_NAME} PRIVATE raylib)

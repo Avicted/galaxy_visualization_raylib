@@ -32,9 +32,13 @@ endif
 # Find the system-installed Raylib library
 raylib_dep = dependency('raylib', required: true)
 
+# Add include directory
+inc_dir = include_directories('includes')
+
 # Executable definition
-executable('galaxy_visualization_raylib', 'frontend.cpp',
+executable('galaxy_visualization_raylib', 'src/frontend.cpp',
     dependencies: raylib_dep,
+    include_directories: inc_dir,
     install: false,
 )
 
