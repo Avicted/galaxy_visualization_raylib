@@ -63,7 +63,7 @@ message(STATUS "----------------------------------------------")
 # Copy resources to the build directory after build
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory
-    ${CMAKE_SOURCE_DIR}/fonts $<TARGET_FILE_DIR:${PROJECT_NAME}>/fonts)
+    ${CMAKE_SOURCE_DIR}/resources/fonts $<TARGET_FILE_DIR:${PROJECT_NAME}>/resources/fonts)
 
 add_custom_command(TARGET ${PROJECT_NAME} POST_BUILD
     COMMAND ${CMAKE_COMMAND} -E copy_directory

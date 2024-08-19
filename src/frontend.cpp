@@ -54,7 +54,7 @@ Material matInstances;
 Mesh SphereMesh;
 
 // 3D Models
-Model EarthModel = {0}; // The Earth model
+Model EarthModel;
 
 // ----------------------------------------------------------------------------------
 
