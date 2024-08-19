@@ -78,11 +78,11 @@ make clean
 
 ##  Demo
 
-![demo](images/galaxy_viz_demo.gif "galaxy_viz_demo.gif")
+![demo](resources/images/galaxy_viz_demo.gif "galaxy_viz_demo.gif")
 
 ---
 
-![screen](images/screenshot.png "screenshot.png")
+![screen](resources/images/screenshot.png "screenshot.png")
 
 ## Patch Notes
 
