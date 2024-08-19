@@ -44,17 +44,26 @@ exe = executable(
 )
 
 # Install directories and resources
+
+# Create a resources directory in the build directory
+resources_dir = custom_target(
+  'resources_dir',
+  output: 'resources',
+  command: ['mkdir', '-p', meson.build_root() / './resources'],
+  build_by_default: true
+)
+
 fonts_copy = custom_target(
   'copy_fonts',
   output: 'fonts',
-  command: ['cp', '-r', meson.source_root() / 'fonts', meson.build_root() / 'fonts'],
+  command: ['cp', '-r', meson.source_root() / './resources/fonts', meson.build_root() / './resources'],
   build_by_default: true
 )
 
 copy_input_data = custom_target(
   'copy_input_data',
   output: 'input_data',
-  command: ['cp', '-r', meson.source_root() / 'input_data', meson.build_root() / 'input_data'],
+  command: ['cp', '-r', meson.source_root() / 'input_data', meson.build_root() / './input_data'],
   build_by_default: true
 )
 

@@ -587,8 +587,8 @@ i32 main(i32 argc, char **argv)
         SetTargetFPS(60);
     }
 
-    MainFont = LoadFontEx("./fonts/SuperMarioBros2.ttf", 32, 0, 250);
-    CustomShader = LoadShader("shaders/lighting_instancing.vs", "shaders/lighting.fs");
+    MainFont = LoadFontEx("./resources/fonts/SuperMarioBros2.ttf", 32, 0, 250);
+    CustomShader = LoadShader("./shaders/lighting_instancing.vs", "./shaders/lighting.fs");
     SphereMesh = GenMeshSphere(0.2f, 16, 16);
 
     // Get shader locations
@@ -619,7 +619,7 @@ i32 main(i32 argc, char **argv)
     PrintMemoryUsage();
 
     // Load the Earth model
-    EarthModel = LoadModel("resources/Earth_1_12756.glb");
+    EarthModel = LoadModel("./resources/Earth_1_12756.glb");
 
     // Optionally, you can scale the model if needed
     Matrix scaleMatrix = MatrixScale(0.05f, 0.05f, 0.05f);
