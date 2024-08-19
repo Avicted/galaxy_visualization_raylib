@@ -1,0 +1,13 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Debug with Meson",
+            "type": "cppdbg",
+            "request": "launch",
+            "program": "${workspaceRoot}/build/galaxy_visualization_raylib",
+            "cwd": "${workspaceRoot}",
+            "preLaunchTask": "build debug meson"
+        }
+    ]
+}

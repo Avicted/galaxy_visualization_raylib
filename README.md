@@ -32,7 +32,7 @@ sudo apt-get install -y raylib build-essential meson git cmake clang
 ### Build and Run the Project
 
 You can choose from one of the following build systems:
-- Meson
+- Meson (F5 in VSCode)
 - Make with CMake
 
 
@@ -78,7 +78,7 @@ make clean
 
 ##  Demo
 
-![demo](images/demo.gif "demo.gif")
+![demo](images/galaxy_viz_demo.gif "galaxy_viz_demo.gif")
 
 ---
 
@@ -90,3 +90,5 @@ make clean
 - Added Makefile for Linux.
 - Added Meson build system for Linux.
 - The Meson build now links against the system-installed Raylib.
+- Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
+- Added Free Look Mode.

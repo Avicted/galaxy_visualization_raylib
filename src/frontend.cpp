@@ -26,7 +26,6 @@ i32 ScreenHeight = 360 * 2;
 bool Debug = false;
 bool DataAIsLoaded = false;
 bool IsPaused = false;
-bool FreeLook = false;
 
 i64 CPUMemory = 0L;
 
@@ -36,7 +35,7 @@ const char *DataBFilename = "./input_data/flat_100k_arcmin.txt";
 Font MainFont = {0};
 
 Camera3D MainCamera = {};
-f32 Zoom = 1.3f;
+f32 Zoom = 1.0f * PI;
 
 const unsigned long int MAX_DATA_POINTS = 100000UL;
 
@@ -53,6 +52,10 @@ Draw_Data DataToDraw = DRAW_ALL_DATA;
 // Define mesh to be instanced
 Material matInstances;
 Mesh SphereMesh;
+
+// 3D Models
+Model EarthModel = {0}; // The Earth model
+
 // ----------------------------------------------------------------------------------
 
 internal void
@@ -113,46 +116,99 @@ internal void
 RotateCameraAroundOrigo(f32 DeltaTime)
 {
     Camera3D *Cam = &MainCamera;
-    f32 Radius = 50.0f;
-    f32 Speed = 0.2f;
-    f32 VerticalSpeed = 0.1f; // Adjust this to control vertical sensitivity
+    f32 Speed = 10.0f * DeltaTime;
+    f32 VerticalSpeed = 5.0f * DeltaTime;
 
-    local_persist f32 PreviousTimeSinceStart = 0.0f;
-    local_persist bool initializedFreeLook = false;
-    local_persist Vector3 InitialCameraPosition;
+    static f32 Yaw = 45.80f;
+    static f32 Pitch = 42.12f;
+    static bool CursorEnabled = false;
 
-    if (FreeLook)
+    static Vector3 direction;
+    direction.x = cosf(DEG2RAD * Pitch) * cosf(DEG2RAD * Yaw);
+    direction.y = sinf(DEG2RAD * Pitch);
+    direction.z = cosf(DEG2RAD * Pitch) * sinf(DEG2RAD * Yaw);
+    direction = Vector3Normalize(direction);
+
+    static Vector3 right = Vector3Normalize(Vector3CrossProduct(direction, Cam->up));
+    static Vector3 up = Vector3Normalize(Vector3CrossProduct(right, direction));
+
+    if (IsPaused)
     {
-        if (!initializedFreeLook)
+        // Disable the cursor to lock it to the center and hide it
+        if (CursorEnabled)
         {
-            // Initialize the initial camera position based on the current camera position
-            InitialCameraPosition = Cam->position;
-            PreviousTimeSinceStart = atan2f(Cam->position.z, Cam->position.x); // Ensure continuity in rotation
-            initializedFreeLook = true;
+            DisableCursor();
+            CursorEnabled = false;
+
+            // @Note(Victor): Set the camera to a specific position, to look at the data and earth
+            Cam->position = {45.48f, 42.12f, 45.36f};
+            Cam->target = {44.94f, 41.57f, 44.73f};
+            direction = {44.94, 41.57, 44.73};
         }
 
         Vector2 mouseDelta = GetMouseDelta();
-        PreviousTimeSinceStart += DeltaTime * Speed * mouseDelta.x;
 
-        // Update camera position based on mouse delta (x for horizontal, y for vertical)
-        Cam->position.x = InitialCameraPosition.x * cosf(PreviousTimeSinceStart) * Zoom;
-        Cam->position.y = InitialCameraPosition.y + mouseDelta.y * VerticalSpeed;
-        Cam->position.z = InitialCameraPosition.z * sinf(PreviousTimeSinceStart) * Zoom;
+        // Update yaw and pitch based on mouse movement
+        Yaw += mouseDelta.x * 0.1f;
+        Pitch += mouseDelta.y * 0.1f;
 
-        Cam->target = Vector3Zero();
+        // Clamp pitch to avoid flipping the camera
+        if (Pitch > 89.0f)
+            Pitch = 89.0f;
+        if (Pitch < -89.0f)
+            Pitch = -89.0f;
+
+        // Move camera based on input
+        if (IsKeyDown(KEY_W))
+        {
+            Cam->position = Vector3Subtract(Cam->position, Vector3Scale(direction, Speed));
+        }
+        if (IsKeyDown(KEY_S))
+        {
+            Cam->position = Vector3Add(Cam->position, Vector3Scale(direction, Speed));
+        }
+        if (IsKeyDown(KEY_D))
+        {
+            Cam->position = Vector3Subtract(Cam->position, Vector3Scale(right, Speed));
+        }
+        if (IsKeyDown(KEY_A))
+        {
+            Cam->position = Vector3Add(Cam->position, Vector3Scale(right, Speed));
+        }
+        if (IsKeyDown(KEY_Q))
+        {
+            Cam->position = Vector3Subtract(Cam->position, Vector3Scale(up, VerticalSpeed));
+        }
+        if (IsKeyDown(KEY_E))
+        {
+            Cam->position = Vector3Add(Cam->position, Vector3Scale(up, VerticalSpeed));
+        }
+
+        // Update camera target to reflect the new direction
+        Cam->target = Vector3Subtract(Cam->position, direction);
     }
     else
     {
-        initializedFreeLook = false; // Reset the flag when not in free look mode
+        // If not in free look mode, enable the cursor and restore the original camera logic
+        if (!CursorEnabled)
+        {
+            EnableCursor();
+            CursorEnabled = true;
+        }
 
-        PreviousTimeSinceStart += DeltaTime * Speed;
+        static f32 PreviousTimeSinceStart = 0.0f;
+        PreviousTimeSinceStart += DeltaTime * 0.2f;
 
-        Cam->position.x = Radius * cosf(PreviousTimeSinceStart) * Zoom;
+        Cam->position.x = 25.0f * cosf(PreviousTimeSinceStart) * Zoom;
         Cam->position.y = 50.0f;
-        Cam->position.z = Radius * sinf(PreviousTimeSinceStart) * Zoom;
+        Cam->position.z = 25.0f * sinf(PreviousTimeSinceStart) * Zoom;
 
         Cam->target = Vector3Zero();
     }
+
+    // printf("Direction: x=%f, y=%f, z=%f\n", direction.x, direction.y, direction.z);
+    // printf("Right:     x=%f, y=%f, z=%f\n", right.x, right.y, right.z);
+    // printf("Up:        x=%f, y=%f, z=%f\n", up.x, up.y, up.z);
 }
 
 internal void
@@ -188,7 +244,6 @@ GameUpdate(f32 DeltaTime)
     if (IsKeyPressed(KEY_SPACE))
     {
         IsPaused = !IsPaused;
-        FreeLook = !FreeLook;
         printf("\tIsPaused: %s\n", IsPaused ? "true" : "false");
     }
 
@@ -218,7 +273,12 @@ GameRender(f32 DeltaTime)
     BeginMode3D(MainCamera);
 
     // Draw a earth sphere
-    DrawSphere({0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
+    // DrawSphere({0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
+
+    // Draw the Earth model at the origin (0, 0, 0)
+    Vector3 EarthPosition = {0.0f, 0.0f, 0.0f};
+    const float EarthScale = 1.0f;
+    DrawModel(EarthModel, EarthPosition, EarthScale, WHITE);
 
     // Draw instanced meshes
     if (DataToDraw == DRAW_DATA_A || DataToDraw == DRAW_ALL_DATA)
@@ -240,44 +300,51 @@ GameRender(f32 DeltaTime)
     // Draw the FPS with our font
     DrawTextEx(MainFont, TextFormat("FPS: %i", GetFPS()), {10, 10}, 20, 2, WHITE);
 
-    // Draw the camera position
-    DrawTextEx(MainFont, TextFormat("Camera Position: (%.2f, %.2f, %.2f)", MainCamera.position.x, MainCamera.position.y, MainCamera.position.z), {10, 30}, 20, 2, WHITE);
-
-    // Scroll to zoom
-    DrawTextEx(MainFont, TextFormat("Scroll to zoom: %.2f", Zoom), {10, 50}, 20, 2, WHITE);
+    if (!IsPaused)
+    {
+        // Scroll to zoom
+        DrawTextEx(MainFont, TextFormat("Scroll to zoom: %.2f", Zoom), {10, 50}, 16, 2, WHITE);
+    }
 
     // Press F11 to toggle fullscreen
-    DrawTextEx(MainFont, TextFormat("Press F11 to toggle fullscreen"), {10, 70}, 20, 2, WHITE);
+    DrawTextEx(MainFont, TextFormat("Press F11 to toggle fullscreen"), {10, 70}, 16, 2, WHITE);
 
     // Press 1, 2 or 3 to toggle which data to draw
-    DrawTextEx(MainFont, TextFormat("Press 1, 2 or 3 to toggle which data to draw"), {10, 90}, 20, 2, WHITE);
+    DrawTextEx(MainFont, TextFormat("Press 1, 2 or 3 to toggle which data to draw"), {10, 90}, 16, 2, WHITE);
 
     // Red are uniformly distributed, blue are real data
-    DrawTextEx(MainFont, TextFormat("Red are uniformly distributed"), {10, 110}, 20, 2, RED);
-    DrawTextEx(MainFont, TextFormat("Blue are real data"), {10, 130}, 20, 2, BLUE);
+    DrawTextEx(MainFont, TextFormat("Red are uniformly distributed"), {10, 110}, 16, 2, RED);
+    DrawTextEx(MainFont, TextFormat("Blue are real data"), {10, 130}, 16, 2, BLUE);
+
+    if (IsPaused)
+    {
+        DrawTextEx(MainFont, TextFormat("Press W, A, S, D, Q, E to move the camera + Mouse"), {10, 150}, 16, 2, WHITE);
+    }
 
     // Press space to pause in the center bottom
     if (IsPaused)
     {
-        DrawTextEx(MainFont, TextFormat("Paused"), {ScreenWidth / 2.0f - 64.0f, ScreenHeight - 30.0f}, 20, 2, RED);
+        const float TextWidth = MeasureText("Press Space again to go back to Auto Look", 16);
+        DrawTextEx(MainFont, TextFormat("Press Space again to go back to Auto Look"), {ScreenWidth / 2.0f - TextWidth - 64.0f / 2.0f, ScreenHeight - 30.0f}, 16, 2, PURPLE);
     }
     else
     {
         // Highlight the paused text
-        DrawTextEx(MainFont, TextFormat("Auto Camera Active"), {ScreenWidth / 2.0f - 128.0f, ScreenHeight - 30.0f}, 20, 2, GREEN);
+        const float TextWidth = MeasureText("Press Space to enter Free Look mode", 16);
+        DrawTextEx(MainFont, "Press Space to enter Free Look mode", {ScreenWidth / 2.0f - TextWidth - 64.0f / 2.0f, ScreenHeight - 30.0f}, 16, 2, GREEN);
     }
 
-    if (FreeLook)
+    if (IsPaused)
     {
-        const char *FreeLookText = "Free Look";
-        const int FreeLookTextLength = strlen(FreeLookText);
-        DrawTextEx(MainFont, FreeLookText, {ScreenWidth - 128.0f - 64.0f, 30}, 20, 2, GREEN);
+        const char *IsPausedText = "Free Look";
+        const int IsPausedTextLength = strlen(IsPausedText);
+        DrawTextEx(MainFont, IsPausedText, {ScreenWidth - 128.0f - 64.0f, 30}, 20, 2, PURPLE);
     }
     else
     {
-        const char *FreeLookText = "Auto Look";
-        const int FreeLookTextLength = strlen(FreeLookText);
-        DrawTextEx(MainFont, FreeLookText, {ScreenWidth - 64.0f - 128.0f - 32.0f, 30}, 20, 2, RED);
+        const char *IsPausedText = "Auto Look";
+        const int IsPausedTextLength = strlen(IsPausedText);
+        DrawTextEx(MainFont, IsPausedText, {ScreenWidth - 64.0f - 128.0f - 32.0f, 30}, 20, 2, GREEN);
     }
 
     EndDrawing();
@@ -453,7 +520,7 @@ i32 main(i32 argc, char **argv)
     DataAIsLoaded = true;
 
     // Set the camera to rotate around the center of the data
-    MainCamera.position = {0.0f, 50.0f, 100.0f};
+    MainCamera.position = {0.0f, 60.0f, 100.0f};
     MainCamera.target = {0.0f, 0.0f, 0.0f};
     MainCamera.up = {0.0f, 1.0f, 0.0f};
     MainCamera.fovy = 75.0f; // Adjust if necessary
@@ -550,6 +617,13 @@ i32 main(i32 argc, char **argv)
 
     printf("\n\tMemory usage before we start the game loop\n");
     PrintMemoryUsage();
+
+    // Load the Earth model
+    EarthModel = LoadModel("resources/Earth_1_12756.glb");
+
+    // Optionally, you can scale the model if needed
+    Matrix scaleMatrix = MatrixScale(0.05f, 0.05f, 0.05f);
+    EarthModel.transform = MatrixMultiply(EarthModel.transform, scaleMatrix);
 
     // Main loop
     while (!WindowShouldClose()) // Detect window close button or ESC key

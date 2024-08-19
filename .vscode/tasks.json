@@ -1,0 +1,15 @@
+{
+    "tasks": [
+        {
+            "label": "build debug meson",
+            "type": "shell",
+            "command": "clear && meson setup build --buildtype=debug && cd build && ninja"
+        },
+        {
+            "label": "build mingw meson",
+            "type": "shell",
+            "command": "meson setup build-mingw --cross-file windows32.ini --buildtype=debug && cd build-mingw && ninja"
+        }
+    ],
+    "version": "2.0.0"
+}
