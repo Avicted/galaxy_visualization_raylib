@@ -7,7 +7,7 @@ Visualization of 100,000 real galaxies in blue and 100,000 randomly distributed 
 This project visualizes 100,000 real galaxies in blue and 100,000 randomly distributed galaxies in red. The data is sourced from the GPU programming course at  
 [Åbo Akademi University](https://studiehandboken.abo.fi/en/course/IT00CG19/19162?period=2024-2027)
 
-This course teaches parallel programming using CUDA (Parallel programming). 
+This course teaches parallel programming using CUDA. 
 
 The assignment is to use CUDA to calculate 10 billion angles between galaxies and prove they are not randomly distributed. 
 The students must leverage the GPU for these calculations on their own using a supercomputer.
