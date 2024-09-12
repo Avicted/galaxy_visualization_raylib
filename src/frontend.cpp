@@ -8,15 +8,20 @@
 // Types -------------------------------------------------------------------------
 struct ArcminData
 {
-    f32 right_ascension = 0.0f;
-    f32 declination = 0.0f;
+    f64 right_ascension = 0.0f;
+    f64 declination = 0.0f;
+    f64 redshift = 0.0f;
 };
 
 enum Draw_Data
 {
+    // Draw the data from the files from the ÅA course
     DRAW_DATA_A,
     DRAW_DATA_B,
-    DRAW_ALL_DATA
+    DRAW_ALL_DATA,
+
+    // Draw the redshift data, not from the course
+    DRAW_REDSHIFT_DATA,
 };
 
 // Variables ---------------------------------------------------------------------
@@ -31,20 +36,28 @@ i64 CPUMemory = 0L;
 
 const char *DataAFilename = "./input_data/data_100k_arcmin.txt";
 const char *DataBFilename = "./input_data/flat_100k_arcmin.txt";
+const char *RedshiftDataFilename = "./redshift_input_data/seyfert.dat";
 
 Font MainFont = {0};
 
 Camera3D MainCamera = {};
-f32 Zoom = 1.0f * PI;
+f64 Zoom = 1.0f * PI;
 
 const unsigned long int MAX_DATA_POINTS = 100000UL;
+unsigned long int MAX_REDSHIFT_DATA_POINTS = 100000UL; // @Note(Victor): This is set when we read the redshift data
 
+// @Note(Victor): Data from the course, only celestial coordinates, no redshift (distance)
 ArcminData *DataPointsA = nullptr;
 ArcminData *DataPointsB = nullptr;
+
+// @Note(Victor): Data from the redshift file with the appriximated distances to the galaxies
+ArcminData *RedshiftData = nullptr;
 
 // Batch rendering in Raylib with a custom shader
 Matrix *MatrixTransformsA = nullptr;
 Matrix *MatrixTransformsB = nullptr;
+Matrix *MatrixTransformsRedshift = nullptr;
+
 Shader CustomShader = {0};
 
 Draw_Data DataToDraw = DRAW_ALL_DATA;
@@ -113,14 +126,14 @@ HandleWindowResize(void)
 }
 
 internal void
-RotateCameraAroundOrigo(f32 DeltaTime)
+RotateCameraAroundOrigo(f64 DeltaTime)
 {
     Camera3D *Cam = &MainCamera;
-    f32 Speed = 10.0f * DeltaTime;
-    f32 VerticalSpeed = 5.0f * DeltaTime;
+    f64 Speed = 10.0f * DeltaTime;
+    f64 VerticalSpeed = 5.0f * DeltaTime;
 
-    static f32 Yaw = 45.80f;
-    static f32 Pitch = 42.12f;
+    static f64 Yaw = 45.80f;
+    static f64 Pitch = 42.12f;
     static bool CursorEnabled = false;
 
     static Vector3 direction;
@@ -196,7 +209,7 @@ RotateCameraAroundOrigo(f32 DeltaTime)
             CursorEnabled = true;
         }
 
-        static f32 PreviousTimeSinceStart = 0.0f;
+        static f64 PreviousTimeSinceStart = 0.0f;
         PreviousTimeSinceStart += DeltaTime * 0.2f;
 
         Cam->position.x = 25.0f * cosf(PreviousTimeSinceStart) * Zoom;
@@ -212,7 +225,7 @@ RotateCameraAroundOrigo(f32 DeltaTime)
 }
 
 internal void
-GameUpdate(f32 DeltaTime)
+GameUpdate(f64 DeltaTime)
 {
     HandleWindowResize();
 
@@ -241,6 +254,11 @@ GameUpdate(f32 DeltaTime)
         DataToDraw = DRAW_ALL_DATA;
     }
 
+    if (IsKeyPressed(KEY_FOUR))
+    {
+        DataToDraw = DRAW_REDSHIFT_DATA;
+    }
+
     if (IsKeyPressed(KEY_SPACE))
     {
         IsPaused = !IsPaused;
@@ -249,17 +267,17 @@ GameUpdate(f32 DeltaTime)
 
     RotateCameraAroundOrigo(DeltaTime);
 
-    f32 Scroll = GetMouseWheelMove();
+    f64 Scroll = GetMouseWheelMove();
     if (Scroll != 0.0f)
     {
         const float ZoomChange = -2.5f;
-        f32 Speed = ZoomChange;
+        f64 Speed = ZoomChange;
         Zoom = Clamp(Zoom + Scroll * Speed * DeltaTime, 0.0f, 10.0f);
     }
 }
 
 internal void
-GameRender(f32 DeltaTime)
+GameRender(f64 DeltaTime)
 {
     BeginDrawing();
     ClearBackground(BLACK);
@@ -293,6 +311,12 @@ GameRender(f32 DeltaTime)
         DrawMeshInstanced(SphereMesh, matInstances, MatrixTransformsB, MAX_DATA_POINTS);
     }
 
+    if (DataToDraw == DRAW_REDSHIFT_DATA)
+    {
+        matInstances.maps[MATERIAL_MAP_DIFFUSE].color = MAGENTA;
+        DrawMeshInstanced(SphereMesh, matInstances, MatrixTransformsRedshift, MAX_REDSHIFT_DATA_POINTS);
+    }
+
     EndMode3D();
 
     // UI ------------------------------------------------------
@@ -310,11 +334,12 @@ GameRender(f32 DeltaTime)
     DrawTextEx(MainFont, TextFormat("Press F11 to toggle fullscreen"), {10, 70}, 16, 2, WHITE);
 
     // Press 1, 2 or 3 to toggle which data to draw
-    DrawTextEx(MainFont, TextFormat("Press 1, 2 or 3 to toggle which data to draw"), {10, 90}, 16, 2, WHITE);
+    DrawTextEx(MainFont, TextFormat("Press 1, 2, 3 or 4 to toggle which data to draw"), {10, 90}, 16, 2, WHITE);
 
     // Red are uniformly distributed, blue are real data
     DrawTextEx(MainFont, TextFormat("Red are uniformly distributed"), {10, 110}, 16, 2, RED);
     DrawTextEx(MainFont, TextFormat("Blue are real data"), {10, 130}, 16, 2, BLUE);
+    DrawTextEx(MainFont, TextFormat("Magenta are redshift data"), {10, 160}, 16, 2, MAGENTA);
 
     if (IsPaused)
     {
@@ -353,8 +378,8 @@ GameRender(f32 DeltaTime)
 internal void
 PrintMemoryUsage(void)
 {
-    printf("\n\tMemory used in GigaBytes: %f\n", (f32)CPUMemory / (f32)Gigabytes(1));
-    printf("\tMemory used in MegaBytes: %f\n", (f32)CPUMemory / (f32)Megabytes(1));
+    printf("\n\tMemory used in GigaBytes: %f\n", (f64)CPUMemory / (f64)Gigabytes(1));
+    printf("\tMemory used in MegaBytes: %f\n", (f64)CPUMemory / (f64)Megabytes(1));
 }
 
 internal void
@@ -383,6 +408,16 @@ CleanupOurStuff(void)
     printf("\n\tFreeing MatrixTransformsB: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
     PrintMemoryUsage();
 
+    free(RedshiftData);
+    CPUMemory -= MAX_REDSHIFT_DATA_POINTS * sizeof(ArcminData);
+    printf("\n\tFreeing RedshiftData: %lu\n", MAX_REDSHIFT_DATA_POINTS * sizeof(ArcminData));
+    PrintMemoryUsage();
+
+    free(MatrixTransformsRedshift);
+    CPUMemory -= MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
+    printf("\n\tFreeing MatrixTransformsRedshift: %lu\n", MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix));
+    PrintMemoryUsage();
+
     // @Note(Victor): There should be no allocated memory left
     Assert(CPUMemory == 0);
 }
@@ -397,7 +432,74 @@ SigIntHandler(i32 Signal)
     exit(0);
 }
 
-local_persist bool
+internal bool
+ReadInputDataFromRedshiftFile(const char *FileName, ArcminData *DataPointsLocation)
+{
+    FILE *f = fopen(FileName, "r");
+    if (f == NULL)
+    {
+        printf("Error opening redshift file: %s\n", FileName);
+        return false;
+    }
+
+    const int bufferSize = 4096;
+    char Line[bufferSize]; // Buffer to store each line from the file
+
+    // Skip the header 13 lines
+    const int HeaderLines = 13;
+    for (i32 i = 0; i < HeaderLines; ++i)
+    {
+        if (fgets(Line, sizeof(Line), f) == NULL)
+        {
+            printf("Error reading header!\n");
+            return false;
+        }
+    }
+
+    // Read each line from the file
+    i32 i = 0;
+    while (fgets(Line, sizeof(Line), f) != NULL)
+    {
+        // Tokenize the line assuming tab-separated values for right ascension, declination, and redshift
+        char *Token = strtok(Line, "\t");
+        i32 j = 0;
+
+        // Manual end, when the first column is 140
+        if (strcmp(Token, "140") == 0)
+        {
+            break;
+        }
+
+        while (Token != NULL)
+        {
+            if (j == 1)
+            {
+                DataPointsLocation[i].right_ascension = atof(Token); // Parse right ascension
+            }
+            else if (j == 2)
+            {
+                DataPointsLocation[i].declination = atof(Token); // Parse declination
+            }
+            else if (j == 4)
+            {
+                DataPointsLocation[i].redshift = atof(Token); // Parse redshift
+            }
+
+            Token = strtok(NULL, "\t");
+            j++;
+        }
+
+        i++;
+    }
+
+    MAX_REDSHIFT_DATA_POINTS = i;
+
+    fclose(f);
+    printf("\tSuccessfully read %d redshift data points from %s\n", i, FileName);
+    return true;
+}
+
+internal bool
 ReadInputDataFromFile(const char *FileName, ArcminData *DataPointsLocation)
 {
     FILE *f = fopen(FileName, "r");
@@ -470,6 +572,8 @@ i32 main(i32 argc, char **argv)
     DataPointsB = (ArcminData *)calloc(MAX_DATA_POINTS, sizeof(ArcminData));
     CPUMemory += MAX_DATA_POINTS * sizeof(ArcminData);
 
+    RedshiftData = (ArcminData *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(ArcminData));
+
     if (ReadInputDataFromFile(DataAFilename, DataPointsA))
     {
         printf("\tReadInputDataFromFile: %s succeeded!\n", DataAFilename);
@@ -490,6 +594,18 @@ i32 main(i32 argc, char **argv)
         printf("\tReadInputDataFromFile: %s failed!\n", DataBFilename);
         CleanupOurStuff();
         return (1);
+    }
+
+    if (ReadInputDataFromRedshiftFile(RedshiftDataFilename, RedshiftData)) // or another appropriate data structure
+    {
+        printf("\tSuccessfully loaded redshift data from %s\n", RedshiftDataFilename);
+        CPUMemory += MAX_REDSHIFT_DATA_POINTS * sizeof(ArcminData);
+    }
+    else
+    {
+        printf("Failed to load redshift data from %s\n", RedshiftDataFilename);
+        CleanupOurStuff();
+        return 1;
     }
 
     printf("\tHello from raylib_galaxy_application!\n\n");
@@ -534,6 +650,9 @@ i32 main(i32 argc, char **argv)
         MatrixTransformsB = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
         CPUMemory += MAX_DATA_POINTS * sizeof(Matrix);
 
+        MatrixTransformsRedshift = (Matrix *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(Matrix));
+        CPUMemory += MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
+
         Matrix rotation = MatrixRotateXYZ({0.0f, 0.0f, 0.0f});
 
         for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
@@ -541,14 +660,14 @@ i32 main(i32 argc, char **argv)
             // DataPointsA real galaxies
             {
                 // Transform the arc minutes into radians that the trigonometric functions take as input. (sinf, cosf, tanf)
-                f32 RightAscensionRad = (DataPointsA[i].right_ascension / 60.0f) * (PI / 180.0f);
-                f32 DeclinationRad = (DataPointsA[i].declination / 60.0f) * (PI / 180.0f);
+                f64 RightAscensionRad = (DataPointsA[i].right_ascension / 60.0f) * (PI / 180.0f);
+                f64 DeclinationRad = (DataPointsA[i].declination / 60.0f) * (PI / 180.0f);
 
                 // Calculate the position on the sphere using spherical coordinates
-                f32 Radius = 50.0f;
-                f32 X = Radius * cosf(RightAscensionRad) * cosf(DeclinationRad);
-                f32 Y = Radius * sinf(DeclinationRad);
-                f32 Z = Radius * sinf(RightAscensionRad) * cosf(DeclinationRad);
+                f64 Radius = 50.0f;
+                f64 X = Radius * cosf(RightAscensionRad) * cosf(DeclinationRad);
+                f64 Y = Radius * sinf(DeclinationRad);
+                f64 Z = Radius * sinf(RightAscensionRad) * cosf(DeclinationRad);
 
                 // Create a model matrix for each data point to position it
                 MatrixTransformsA[i] = MatrixIdentity();
@@ -558,20 +677,38 @@ i32 main(i32 argc, char **argv)
 
             // DataPointsB uniformly distributed (galaxies)
             {
-                f32 RightAscensionRad = (DataPointsB[i].right_ascension / 60.0f) * (PI / 180.0f);
-                f32 DeclinationRad = (DataPointsB[i].declination / 60.0f) * (PI / 180.0f);
+                f64 RightAscensionRad = (DataPointsB[i].right_ascension / 60.0f) * (PI / 180.0f);
+                f64 DeclinationRad = (DataPointsB[i].declination / 60.0f) * (PI / 180.0f);
 
                 // Calculate the position on the sphere using spherical coordinates
-                f32 Radius = 50.0f;
-                f32 X = Radius * cosf(RightAscensionRad) * cosf(DeclinationRad);
-                f32 Y = Radius * sinf(DeclinationRad);
-                f32 Z = Radius * sinf(RightAscensionRad) * cosf(DeclinationRad);
+                f64 Radius = 50.0f;
+                f64 X = Radius * cosf(RightAscensionRad) * cosf(DeclinationRad);
+                f64 Y = Radius * sinf(DeclinationRad);
+                f64 Z = Radius * sinf(RightAscensionRad) * cosf(DeclinationRad);
 
                 // Create a model matrix for each data point to position it
                 MatrixTransformsB[i] = MatrixIdentity();
                 MatrixTransformsB[i] = MatrixMultiply(MatrixTransformsB[i], MatrixScale(0.1f, 0.1f, 0.1f));
                 MatrixTransformsB[i] = MatrixMultiply(MatrixTransformsB[i], MatrixTranslate(X, Y, Z));
             }
+        } // end of for loop for the course data
+
+        // Redshift data points with distance from the earth
+        for (unsigned long int i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
+        {
+            f64 RightAscensionRad = (RedshiftData[i].right_ascension / 60.0f) * (PI / 180.0f);
+            f64 DeclinationRad = (RedshiftData[i].declination / 60.0f) * (PI / 180.0f);
+
+            // Calculate the position on the sphere using spherical coordinates
+            f64 Radius = 50.0f;
+            f64 X = Radius * cosf(RightAscensionRad) * cosf(DeclinationRad);
+            f64 Y = Radius * sinf(DeclinationRad);
+            f64 Z = Radius * sinf(RightAscensionRad) * cosf(DeclinationRad);
+
+            // Create a model matrix for each data point to position it
+            MatrixTransformsRedshift[i] = MatrixIdentity();
+            MatrixTransformsRedshift[i] = MatrixMultiply(MatrixTransformsRedshift[i], MatrixScale(0.1f, 0.1f, 0.1f));
+            MatrixTransformsRedshift[i] = MatrixMultiply(MatrixTransformsRedshift[i], MatrixTranslate(X, Y, Z));
         }
     }
 
@@ -600,7 +737,7 @@ i32 main(i32 argc, char **argv)
     {
         // Set shader value: ambient light level
         i32 AmbientLoc = GetShaderLocation(CustomShader, "ambient");
-        f32 AmbientValue[4] = {0.2f, 0.2f, 0.2f, 1.0f};
+        f64 AmbientValue[4] = {0.2f, 0.2f, 0.2f, 1.0f};
         SetShaderValue(CustomShader, AmbientLoc, &AmbientValue, SHADER_UNIFORM_VEC4);
 
         CreateLight(LIGHT_DIRECTIONAL, {500.0f, 500.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
@@ -628,7 +765,7 @@ i32 main(i32 argc, char **argv)
     // Main loop
     while (!WindowShouldClose()) // Detect window close button or ESC key
     {
-        f32 DeltaTime = GetFrameTime();
+        f64 DeltaTime = GetFrameTime();
         GameUpdate(DeltaTime);
         GameRender(DeltaTime);
     }
