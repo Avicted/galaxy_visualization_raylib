@@ -82,7 +82,8 @@
         "thread": "cpp",
         "queue": "cpp",
         "stack": "cpp",
-        "*.inc": "cpp"
+        "*.inc": "cpp",
+        "*.ipp": "cpp"
     },
     "dotnet.defaultSolution": "disable",
     "C_Cpp.default.compilerPath": "/usr/bin/clang++",

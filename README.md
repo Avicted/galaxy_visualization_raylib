@@ -92,3 +92,4 @@ make clean
 - The Meson build now links against the system-installed Raylib.
 - Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
 - Added Free Look Mode.
+- Redshift data taken from: https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat
