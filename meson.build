@@ -32,7 +32,7 @@ endif
 raylib_dep = dependency('raylib', required: true)
 
 # Include directories
-inc_dir = include_directories('include')
+inc_dir = include_directories('includes')
 
 # Define the executable
 exe = executable(

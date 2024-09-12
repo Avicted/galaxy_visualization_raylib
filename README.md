@@ -34,6 +34,7 @@ sudo apt-get install -y raylib build-essential meson git cmake clang
 You can choose from one of the following build systems:
 - Meson (F5 in VSCode)
 - Make with CMake
+- build.sh
 
 
 ## Meson
