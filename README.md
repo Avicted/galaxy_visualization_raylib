@@ -1,14 +1,23 @@
 # Galaxy Visualization
 
-This project visualizes 100,000 real galaxies in blue and 100,000 randomly distributed galaxies in red. The data is sourced from the GPU programming course at 
+Visualization of 100,000 real galaxies in blue and 100,000 randomly distributed galaxies in red.
+
+## The Course
+
+This project visualizes 100,000 real galaxies in blue and 100,000 randomly distributed galaxies in red. The data is sourced from the GPU programming course at  
 [Åbo Akademi University](https://studiehandboken.abo.fi/en/course/IT00CG19/19162?period=2024-2027)
 
-This course teaches parallel programming using CUDA. The assignment is to prove whether galaxies are randomly distributed or not.
+This course teaches parallel programming using CUDA (Parallel programming). 
+
+The assignment is to use CUDA to calculate 10 billion angles between galaxies and prove they are not randomly distributed. 
+The students must leverage the GPU for these calculations on their own using a supercomputer.
 
 The students have to prove this on their own. 
 
+The expected runtime for the calculation is approximately 3 seconds.
 
-This program is a visualization of the data.
+
+This program is a visualization of the data, not the solution to the assignment.
 
 ## Prerequisites
 
