@@ -254,10 +254,11 @@ GameUpdate(f64 DeltaTime)
         DataToDraw = DRAW_ALL_DATA;
     }
 
-    if (IsKeyPressed(KEY_FOUR))
+    // @Note(Victor): This is not working as intended
+    /*if (IsKeyPressed(KEY_FOUR))
     {
         DataToDraw = DRAW_REDSHIFT_DATA;
-    }
+    }*/
 
     if (IsKeyPressed(KEY_SPACE))
     {
@@ -339,7 +340,9 @@ GameRender(f64 DeltaTime)
     // Red are uniformly distributed, blue are real data
     DrawTextEx(MainFont, TextFormat("Red are uniformly distributed"), {10, 110}, 16, 2, RED);
     DrawTextEx(MainFont, TextFormat("Blue are real data"), {10, 130}, 16, 2, BLUE);
-    DrawTextEx(MainFont, TextFormat("Magenta are redshift data"), {10, 160}, 16, 2, MAGENTA);
+
+    // @Note(Victor): This is not working as intended
+    // DrawTextEx(MainFont, TextFormat("Magenta are redshift data"), {10, 160}, 16, 2, MAGENTA);
 
     if (IsPaused)
     {
