@@ -4,7 +4,9 @@ This project visualizes 100,000 real galaxies in blue and 100,000 randomly distr
 
 ## Prerequisites
 
-This project can be built using Meson, CMake, or Make. Below are the installation instructions for the required dependencies:
+This project can be built using plain g++ through build.sh (raylib is the only dependency), Meson, CMake, or Make. 
+
+Below are the installation instructions for the required dependencies:
 
 ### Dependencies
 
