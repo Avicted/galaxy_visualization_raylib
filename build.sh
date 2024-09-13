@@ -13,7 +13,7 @@ cp -r src/* build/
 cp -r includes/* build/  # Add this line to copy the includes directory
 
 # Build with g++
-g++ build/frontend.cpp -o galaxy_visualization -lraylib
+g++ build/frontend.cpp -o galaxy_visualization_raylib -lraylib
 
 # Run the executable
-./galaxy_visualization
+./galaxy_visualization_raylib
