@@ -84,7 +84,9 @@
         "stack": "cpp",
         "*.inc": "cpp",
         "*.ipp": "cpp",
-        "deque": "cpp"
+        "deque": "cpp",
+        "complex": "cpp",
+        "valarray": "cpp"
     },
     "dotnet.defaultSolution": "disable",
     "C_Cpp.default.compilerPath": "/usr/bin/clang++",

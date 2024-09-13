@@ -25,14 +25,16 @@ enum Draw_Data
 };
 
 // Variables ---------------------------------------------------------------------
-i32 ScreenWidth = 640 * 2;
-i32 ScreenHeight = 360 * 2;
+i32 SCREEN_WIDTH = 640 * 2;
+i32 SCREEN_HEIGHT = 360 * 2;
 
 bool Debug = false;
 bool DataAIsLoaded = false;
 bool IsPaused = false;
 
-i64 CPUMemory = 0L;
+u64 CPUMemory = 0L;
+
+constexpr f64 PIdividedBy180 = (PI / 180.0);
 
 const char *DataAFilename = "./input_data/data_100k_arcmin.txt";
 const char *DataBFilename = "./input_data/flat_100k_arcmin.txt";
@@ -69,6 +71,59 @@ Mesh SphereMesh;
 // 3D Models
 Model EarthModel;
 
+// Redshift data calculations
+// ----------------------------------------------------------------------------------
+// Function to convert RA from HHMMSS to degrees
+internal f64
+ConvertRaToDegrees(f64 raHHMMSS)
+{
+    int hours = (int)(raHHMMSS / 10000);
+    int minutes = (int)((raHHMMSS - (hours * 10000)) / 100);
+    f64 seconds = raHHMMSS - (hours * 10000) - (minutes * 100);
+
+    return 15.0 * (hours + (minutes / 60.0) + (seconds / 3600.0)); // 1 hour = 15 degrees
+}
+
+// Function to convert DEC from DDMMSS to degrees
+// DEC: Declination
+// DDMMSS: Degrees, minutes, seconds
+internal f64
+ConvertDecToDegrees(f64 decDDMMSS)
+{
+    int degrees = (int)(decDDMMSS / 10000);
+    int minutes = (int)((decDDMMSS - (degrees * 10000)) / 100);
+    f64 seconds = decDDMMSS - (degrees * 10000) - (minutes * 100);
+
+    f64 decDegrees = abs(degrees) + (minutes / 60.0) + (seconds / 3600.0);
+    return (degrees < 0) ? -decDegrees : decDegrees;
+}
+
+// Assuming speed of light in km/s for converting redshift to distance (simplified calculation)
+const f64 speedOfLight = 299792.458; // Speed of light in km/s
+const f64 hubbleConstant = 70.0;     // Hubble constant in km/s/Mpc
+
+internal f64
+RedshiftToDistance(f64 redshift)
+{
+    // Distance in Megaparsecs (Mpc)
+    return (speedOfLight * redshift) / hubbleConstant;
+}
+
+// Convert spherical coordinates (RA, Dec, distance) to Cartesian (X, Y, Z)
+internal void
+CalculatePosition(f64 ra, f64 dec, f64 redshift, f64 &X, f64 &Y, f64 &Z)
+{
+    f64 distance = RedshiftToDistance(redshift); // Convert redshift to distance (Mpc)
+
+    // Convert degrees to radians
+    f64 raRad = ra * PIdividedBy180;
+    f64 decRad = dec * PIdividedBy180;
+
+    // Calculate Cartesian coordinates
+    X = distance * cos(decRad) * cos(raRad);
+    Y = distance * cos(decRad) * sin(raRad);
+    Z = distance * sin(decRad);
+}
 // ----------------------------------------------------------------------------------
 
 internal void
@@ -96,8 +151,8 @@ HandleWindowResize(void)
 {
     if (IsWindowResized() && !IsWindowFullscreen())
     {
-        ScreenWidth = GetScreenWidth();
-        ScreenHeight = GetScreenHeight();
+        SCREEN_WIDTH = GetScreenWidth();
+        SCREEN_HEIGHT = GetScreenHeight();
     }
 
     // Check for alt + enter
@@ -109,7 +164,7 @@ HandleWindowResize(void)
         if (IsWindowFullscreen())
         {
             // If we are full screen, then go back to the windowed size
-            SetWindowSize(ScreenWidth, ScreenHeight);
+            SetWindowSize(SCREEN_WIDTH, SCREEN_HEIGHT);
         }
         else
         {
@@ -120,8 +175,8 @@ HandleWindowResize(void)
         // Toggle the state
         ToggleFullscreen();
 
-        ScreenWidth = GetScreenWidth();
-        ScreenHeight = GetScreenHeight();
+        SCREEN_WIDTH = GetScreenWidth();
+        SCREEN_HEIGHT = GetScreenHeight();
     }
 }
 
@@ -132,18 +187,18 @@ RotateCameraAroundOrigo(f64 DeltaTime)
     f64 Speed = 10.0f * DeltaTime;
     f64 VerticalSpeed = 5.0f * DeltaTime;
 
-    static f64 Yaw = 45.80f;
-    static f64 Pitch = 42.12f;
-    static bool CursorEnabled = false;
+    local_persist f64 Yaw = 45.80f;
+    local_persist f64 Pitch = 42.12f;
+    local_persist bool CursorEnabled = false;
 
-    static Vector3 direction;
+    local_persist Vector3 direction;
     direction.x = cosf(DEG2RAD * Pitch) * cosf(DEG2RAD * Yaw);
     direction.y = sinf(DEG2RAD * Pitch);
     direction.z = cosf(DEG2RAD * Pitch) * sinf(DEG2RAD * Yaw);
     direction = Vector3Normalize(direction);
 
-    static Vector3 right = Vector3Normalize(Vector3CrossProduct(direction, Cam->up));
-    static Vector3 up = Vector3Normalize(Vector3CrossProduct(right, direction));
+    local_persist Vector3 right = Vector3Normalize(Vector3CrossProduct(direction, Cam->up));
+    local_persist Vector3 up = Vector3Normalize(Vector3CrossProduct(right, direction));
 
     if (IsPaused)
     {
@@ -225,7 +280,7 @@ RotateCameraAroundOrigo(f64 DeltaTime)
             CursorEnabled = true;
         }
 
-        static f64 PreviousTimeSinceStart = 0.0f;
+        local_persist f64 PreviousTimeSinceStart = 0.0f;
         PreviousTimeSinceStart += DeltaTime * 0.2f;
 
         Cam->position.x = 25.0f * cosf(PreviousTimeSinceStart) * Zoom;
@@ -287,7 +342,7 @@ GameUpdate(f64 DeltaTime)
     f64 Scroll = GetMouseWheelMove();
     if (Scroll != 0.0f)
     {
-        const float ZoomChange = -2.5f;
+        const f64 ZoomChange = -2.5f;
         f64 Speed = ZoomChange;
         Zoom = Clamp(Zoom + Scroll * Speed * DeltaTime, 0.0f, 10.0f);
     }
@@ -307,12 +362,35 @@ GameRender(f64 DeltaTime)
     // Draw the data around a sphere in 3D
     BeginMode3D(MainCamera);
 
-    // Draw a earth sphere
-    // DrawSphere({0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
+    /* {
+        // Override the projection matrix to set custom near/far planes
+        rlMatrixMode(RL_PROJECTION);
+        rlLoadIdentity();
+
+        // Set the correct aspect ratio
+        f64 aspect = (f64)GetScreenWidth() / (f64)GetScreenHeight();
+        f64 nearPlane = 0.1f;
+        f64 farPlane = 100000000000.0;
+
+        // Convert fovy from degrees to radians
+        f64 fovyRadians = MainCamera.fovy * DEG2RAD;
+        f64 top = nearPlane * tan(fovyRadians / 2.0f);
+        f64 bottom = -top;
+        f64 right = top * aspect;
+        f64 left = -right;
+
+        // Set the frustum parameters correctly
+        rlFrustum(left, right, bottom, top, nearPlane, farPlane);
+
+        rlMatrixMode(RL_MODELVIEW);
+        rlLoadIdentity();
+    } */
+
+    DrawSphere({0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
 
     // Draw the Earth model at the origin (0, 0, 0)
     Vector3 EarthPosition = {0.0f, 0.0f, 0.0f};
-    const float EarthScale = 1.0f;
+    const f64 EarthScale = 1.0f;
     DrawModel(EarthModel, EarthPosition, EarthScale, WHITE);
 
     // Draw instanced meshes
@@ -370,27 +448,27 @@ GameRender(f64 DeltaTime)
     // Press space to pause in the center bottom
     if (IsPaused)
     {
-        const float TextWidth = MeasureText("Press Space again to go back to Auto Look", 16);
-        DrawTextEx(MainFont, TextFormat("Press Space again to go back to Auto Look"), {ScreenWidth / 2.0f - TextWidth - 64.0f / 2.0f, ScreenHeight - 30.0f}, 16, 2, PURPLE);
+        const f64 TextWidth = MeasureText("Press Space again to go back to Auto Look", 16);
+        DrawTextEx(MainFont, TextFormat("Press Space again to go back to Auto Look"), {(float)(SCREEN_WIDTH / 2.0f - (float)TextWidth - 64.0f / 2.0f), (float)SCREEN_HEIGHT - 30.0f}, 16, 2, PURPLE);
     }
     else
     {
         // Highlight the paused text
-        const float TextWidth = MeasureText("Press Space to enter Free Look mode", 16);
-        DrawTextEx(MainFont, "Press Space to enter Free Look mode", {ScreenWidth / 2.0f - TextWidth - 64.0f / 2.0f, ScreenHeight - 30.0f}, 16, 2, GREEN);
+        const f64 TextWidth = MeasureText("Press Space to enter Free Look mode", 16);
+        DrawTextEx(MainFont, "Press Space to enter Free Look mode", {(float)(SCREEN_WIDTH / 2.0f - (float)TextWidth - 64.0f / 2.0f), (float)SCREEN_HEIGHT - 30.0f}, 16, 2, GREEN);
     }
 
     if (IsPaused)
     {
         const char *IsPausedText = "Free Look";
         const int IsPausedTextLength = strlen(IsPausedText);
-        DrawTextEx(MainFont, IsPausedText, {ScreenWidth - 128.0f - 64.0f, 30}, 20, 2, PURPLE);
+        DrawTextEx(MainFont, IsPausedText, {SCREEN_WIDTH - 128.0f - 64.0f, 30}, 20, 2, PURPLE);
     }
     else
     {
         const char *IsPausedText = "Auto Look";
         const int IsPausedTextLength = strlen(IsPausedText);
-        DrawTextEx(MainFont, IsPausedText, {ScreenWidth - 64.0f - 128.0f - 32.0f, 30}, 20, 2, GREEN);
+        DrawTextEx(MainFont, IsPausedText, {SCREEN_WIDTH - 64.0f - 128.0f - 32.0f, 30}, 20, 2, GREEN);
     }
 
     EndDrawing();
@@ -456,6 +534,13 @@ SigIntHandler(i32 Signal)
 internal bool
 ReadInputDataFromRedshiftFile(const char *FileName, ArcminData *DataPointsLocation)
 {
+    // Data format:
+    // Name: Galaxy name
+    // RA (1950): Right ascension (celestial longitude) in the 1950 epoch (format: HHMMSS.s)
+    // DEC: Declination (celestial latitude) in the 1950 epoch (format: DDMMSS)
+    // VH/VE/VS: Heliocentric velocity or redshift-related data.
+    // Other columns: Additional parameters like magnitude, velocity types, or uncertainties.
+
     FILE *f = fopen(FileName, "r");
     if (f == NULL)
     {
@@ -466,57 +551,63 @@ ReadInputDataFromRedshiftFile(const char *FileName, ArcminData *DataPointsLocati
     const int bufferSize = 4096;
     char Line[bufferSize]; // Buffer to store each line from the file
 
-    // Skip the header 13 lines
+    // Skip the header lines (13 lines in this case)
     const int HeaderLines = 13;
-    for (i32 i = 0; i < HeaderLines; ++i)
+    for (int i = 0; i < HeaderLines; ++i)
     {
         if (fgets(Line, sizeof(Line), f) == NULL)
         {
             printf("Error reading header!\n");
+            fclose(f);
             return false;
         }
     }
 
-    // Read each line from the file
-    i32 i = 0;
-    while (fgets(Line, sizeof(Line), f) != NULL)
+    unsigned long int i = 0;
+    while (fgets(Line, sizeof(Line), f) != NULL && i < MAX_REDSHIFT_DATA_POINTS)
     {
-        // Tokenize the line assuming tab-separated values for right ascension, declination, and redshift
-        char *Token = strtok(Line, "\t");
-        i32 j = 0;
+        // Remove leading/trailing whitespace (if any)
+        char *trimmedLine = strtok(Line, "\n");
 
-        // Manual end, when the first column is 140
-        if (strcmp(Token, "140") == 0)
-        {
-            break;
-        }
+        // Skip empty lines
+        if (trimmedLine == NULL || strlen(trimmedLine) == 0)
+            continue;
+
+        // Tokenize the line assuming space-separated values
+        char *Token = strtok(trimmedLine, " ");
+        int j = 0;
 
         while (Token != NULL)
         {
-            if (j == 1)
+            switch (j)
             {
-                DataPointsLocation[i].right_ascension = atof(Token); // Parse right ascension
-            }
-            else if (j == 2)
-            {
-                DataPointsLocation[i].declination = atof(Token); // Parse declination
-            }
-            else if (j == 4)
-            {
-                DataPointsLocation[i].redshift = atof(Token); // Parse redshift
+            case 1: // RA (1950)
+                DataPointsLocation[i].right_ascension = atof(Token);
+                break;
+            case 2: // DEC
+                DataPointsLocation[i].declination = atof(Token);
+                break;
+            case 4: // Redshift (VH)
+                DataPointsLocation[i].redshift = atof(Token);
+                break;
+            default:
+                break;
             }
 
-            Token = strtok(NULL, "\t");
+            Token = strtok(NULL, " "); // Continue to the next token
             j++;
         }
 
         i++;
     }
 
-    MAX_REDSHIFT_DATA_POINTS = i;
+    if (f != NULL)
+    {
+        fclose(f);
+    }
 
-    fclose(f);
-    printf("\tSuccessfully read %d redshift data points from %s\n", i, FileName);
+    printf("\tSuccessfully read %ld redshift data points from %s\n", i, FileName);
+
     return true;
 }
 
@@ -682,8 +773,8 @@ i32 main(i32 argc, char **argv)
             // DataPointsA real galaxies
             {
                 // Transform the arc minutes into radians that the trigonometric functions take as input. (sinf, cosf, tanf)
-                f64 RightAscensionRad = (DataPointsA[i].right_ascension / 60.0f) * (PI / 180.0f);
-                f64 DeclinationRad = (DataPointsA[i].declination / 60.0f) * (PI / 180.0f);
+                f64 RightAscensionRad = (DataPointsA[i].right_ascension / 60.0f) * PIdividedBy180;
+                f64 DeclinationRad = (DataPointsA[i].declination / 60.0f) * PIdividedBy180;
 
                 // Calculate the position on the sphere using spherical coordinates
                 f64 Radius = 50.0f;
@@ -699,8 +790,8 @@ i32 main(i32 argc, char **argv)
 
             // DataPointsB uniformly distributed (galaxies)
             {
-                f64 RightAscensionRad = (DataPointsB[i].right_ascension / 60.0f) * (PI / 180.0f);
-                f64 DeclinationRad = (DataPointsB[i].declination / 60.0f) * (PI / 180.0f);
+                f64 RightAscensionRad = (DataPointsB[i].right_ascension / 60.0f) * PIdividedBy180;
+                f64 DeclinationRad = (DataPointsB[i].declination / 60.0f) * PIdividedBy180;
 
                 // Calculate the position on the sphere using spherical coordinates
                 f64 Radius = 50.0f;
@@ -720,19 +811,25 @@ i32 main(i32 argc, char **argv)
         // Assuming Redshift has already been scaled to represent the distance directly, we use it as the radius.
         for (unsigned long int i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
         {
-            f64 RightAscensionRad = (RedshiftData[i].right_ascension / 60.0f) * (PI / 180.0f);
-            f64 DeclinationRad = (RedshiftData[i].declination / 60.0f) * (PI / 180.0f);
-            f64 Redshift = RedshiftData[i].redshift;
+            // Convert RA and DEC to radians
+            f64 rightAscensionRad = (RedshiftData[i].right_ascension / 60.0f) * PIdividedBy180;
+            f64 declinationRad = (RedshiftData[i].declination / 60.0f) * PIdividedBy180;
 
-            // Calculate the position in world space using redshift data
-            f64 Distance = Redshift; // Assuming redshift corresponds to distance
-            f64 X = Distance * cos(DeclinationRad) * cos(RightAscensionRad);
-            f64 Y = Distance * cos(DeclinationRad) * sin(RightAscensionRad);
-            f64 Z = Distance * sin(DeclinationRad);
+            // Convert redshift to distance in Megaparsecs
+            f64 distanceMpc = RedshiftToDistance(RedshiftData[i].redshift);
 
-            // Create a model matrix for each data point to position it
+            // Convert distance to some meaningful scale for your simulation
+            // For example, if you want to work in parsecs instead of megaparsecs:
+            f64 distance = distanceMpc * hubbleConstant; // Convert Mpc to parsecs
+
+            // Calculate the position in 3D space using spherical to Cartesian conversion
+            f64 X = distance * cos(declinationRad) * cos(rightAscensionRad);
+            f64 Y = distance * cos(declinationRad) * sin(rightAscensionRad);
+            f64 Z = distance * sin(declinationRad);
+
+            // Apply this position to your model matrix (for example)
             MatrixTransformsRedshift[i] = MatrixIdentity();
-            MatrixTransformsRedshift[i] = MatrixMultiply(MatrixTransformsRedshift[i], MatrixScale(10.0f, 10.0f, 10.0f));
+            MatrixTransformsRedshift[i] = MatrixMultiply(MatrixTransformsRedshift[i], MatrixScale(10000.0f, 10000.0f, 10000.0f));
             MatrixTransformsRedshift[i] = MatrixMultiply(MatrixTransformsRedshift[i], MatrixTranslate(X, Y, Z));
         }
     }
@@ -741,7 +838,7 @@ i32 main(i32 argc, char **argv)
     {
         SetTraceLogLevel(LOG_WARNING);
         SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-        InitWindow(ScreenWidth, ScreenHeight, "galaxy_visuazation_raylib");
+        InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "galaxy_visuazation_raylib");
 
 #if defined(PLATFORM_WEB)
         emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
