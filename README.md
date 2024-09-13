@@ -98,7 +98,7 @@ make clean
 
 ##  Demo
 
-![demo](resources/images/galaxy_viz_demo.gif "galaxy_viz_demo.gif")
+![demo](resources/images/galaxy_demo.gif "galaxy_demo.gif")
 
 ---
 

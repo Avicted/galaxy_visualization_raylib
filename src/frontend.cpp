@@ -318,7 +318,8 @@ GameRender(f64 DeltaTime)
     // Draw instanced meshes
     if (DataToDraw == DRAW_DATA_A || DataToDraw == DRAW_ALL_DATA)
     {
-        matInstances.maps[MATERIAL_MAP_DIFFUSE].color = BLUE;
+        Color MyDARKBLUE = {0, 0, 255, 255};
+        matInstances.maps[MATERIAL_MAP_DIFFUSE].color = MyDARKBLUE;
         DrawMeshInstanced(SphereMesh, matInstances, MatrixTransformsA, MAX_DATA_POINTS);
     }
 
@@ -660,7 +661,7 @@ i32 main(i32 argc, char **argv)
     MainCamera.position = {0.0f, 0.0f, 0.0f};
     MainCamera.target = {0.0f, 0.0f, 0.0f};
     MainCamera.up = {0.0f, 1.0f, 0.0f};
-    MainCamera.fovy = 100.0f; // Adjust if necessary
+    MainCamera.fovy = 65.0f; // Adjust if necessary
     MainCamera.projection = CAMERA_PERSPECTIVE;
 
     // Define transforms to be uploaded to GPU for instances
@@ -786,11 +787,16 @@ i32 main(i32 argc, char **argv)
         // to be used on mesh drawing with DrawMeshInstanced()
         Material GalaxyMaterial = LoadMaterialDefault();
         GalaxyMaterial.shader = CustomShader;
-        GalaxyMaterial.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./resources/images/galaxy_test_texture.png");
-        GalaxyMaterial.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
 
-        // Set the specular ammount
-        GalaxyMaterial.maps[MATERIAL_MAP_SPECULAR].value = 0.01f;
+        GalaxyMaterial.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./resources/images/galaxy_test_texture_diffuse.png");
+        GalaxyMaterial.maps[MATERIAL_MAP_SPECULAR].texture = LoadTexture("./resources/images/galaxy_test_texture_specular.png");
+
+        GalaxyMaterial.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+        GalaxyMaterial.maps[MATERIAL_MAP_SPECULAR].value = 1.0f;
+
+        // Set the shininess for specular reflections
+        float shininess = 32.0f;
+        SetShaderValue(GalaxyMaterial.shader, GetShaderLocation(GalaxyMaterial.shader, "shininess"), &shininess, SHADER_UNIFORM_FLOAT);
 
         matInstances = GalaxyMaterial;
         matInstances.shader = CustomShader;
