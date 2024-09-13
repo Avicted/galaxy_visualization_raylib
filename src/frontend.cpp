@@ -697,16 +697,19 @@ i32 main(i32 argc, char **argv)
         } // end of for loop for the course data
 
         // Redshift data points with distance from the earth
+        // Redshift can be mapped to a distance value in megaparsecs (Mpc) or another suitable unit for distance.
+        // Assuming Redshift has already been scaled to represent the distance directly, we use it as the radius.
         for (unsigned long int i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
         {
             f64 RightAscensionRad = (RedshiftData[i].right_ascension / 60.0f) * (PI / 180.0f);
             f64 DeclinationRad = (RedshiftData[i].declination / 60.0f) * (PI / 180.0f);
+            f64 Redshift = RedshiftData[i].redshift;
 
-            // Calculate the position on the sphere using spherical coordinates
-            f64 Radius = 50.0f;
-            f64 X = Radius * cosf(RightAscensionRad) * cosf(DeclinationRad);
-            f64 Y = Radius * sinf(DeclinationRad);
-            f64 Z = Radius * sinf(RightAscensionRad) * cosf(DeclinationRad);
+            // Calculate the position in world space using redshift data
+            f64 Distance = Redshift; // Assuming redshift corresponds to distance
+            f64 X = Distance * cos(DeclinationRad) * cos(RightAscensionRad);
+            f64 Y = Distance * cos(DeclinationRad) * sin(RightAscensionRad);
+            f64 Z = Distance * sin(DeclinationRad);
 
             // Create a model matrix for each data point to position it
             MatrixTransformsRedshift[i] = MatrixIdentity();
