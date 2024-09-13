@@ -153,11 +153,20 @@ RotateCameraAroundOrigo(f64 DeltaTime)
             DisableCursor();
             CursorEnabled = false;
 
-            // @Note(Victor): Set the camera to a specific position, to look at the data and earth
-            Cam->position = {45.48f, 42.12f, 45.36f};
-            Cam->target = {44.94f, 41.57f, 44.73f};
-            direction = {44.94, 41.57, 44.73};
+            // Set the camera to look at the data from the earths position, roughly
+            Cam->position = {4.911170f, -4.564987f, 11.718232f};
+            Cam->target = {5.357430f, -3.781510f, 12.150687f};
+            direction = {-0.446259f, -0.783477f, -0.432455f};
+            Yaw = -136.600;
+            Pitch = -51.580;
         }
+
+        // printf("\tFree Look mode\n");
+        // printf("\tposition: x=%f, y=%f, z=%f\n", Cam->position.x, Cam->position.y, Cam->position.z);
+        // printf("\ttarget: x=%f, y=%f, z=%f\n", Cam->target.x, Cam->target.y, Cam->target.z);
+        // printf("\tdirection: x=%f, y=%f, z=%f\n", direction.x, direction.y, direction.z);
+        // printf("\tYaw: %f\n", Yaw);
+        // printf("\tPitch: %f\n", Pitch);
 
         Vector2 mouseDelta = GetMouseDelta();
 
@@ -170,6 +179,13 @@ RotateCameraAroundOrigo(f64 DeltaTime)
             Pitch = 89.0f;
         if (Pitch < -89.0f)
             Pitch = -89.0f;
+
+        // Go slower with LShift
+        if (IsKeyDown(KEY_LEFT_SHIFT))
+        {
+            Speed *= 0.1f;
+            VerticalSpeed *= 0.1f;
+        }
 
         // Move camera based on input
         if (IsKeyDown(KEY_W))
@@ -254,11 +270,11 @@ GameUpdate(f64 DeltaTime)
         DataToDraw = DRAW_ALL_DATA;
     }
 
-    // @Note(Victor): This is not working as intended
-    /*if (IsKeyPressed(KEY_FOUR))
-    {
-        DataToDraw = DRAW_REDSHIFT_DATA;
-    }*/
+    // @Note(Victor): This is not working as intended, yet
+    // if (IsKeyPressed(KEY_FOUR))
+    // {
+    //     DataToDraw = DRAW_REDSHIFT_DATA;
+    // }
 
     if (IsKeyPressed(KEY_SPACE))
     {
@@ -347,6 +363,7 @@ GameRender(f64 DeltaTime)
     if (IsPaused)
     {
         DrawTextEx(MainFont, TextFormat("Press W, A, S, D, Q, E to move the camera + Mouse"), {10, 150}, 16, 2, WHITE);
+        DrawTextEx(MainFont, TextFormat("Press LShift to move slower"), {10, 170}, 16, 2, WHITE);
     }
 
     // Press space to pause in the center bottom
@@ -639,10 +656,11 @@ i32 main(i32 argc, char **argv)
     DataAIsLoaded = true;
 
     // Set the camera to rotate around the center of the data
-    MainCamera.position = {0.0f, 60.0f, 100.0f};
+    // MainCamera.position = {0.0f, 60.0f, 100.0f};
+    MainCamera.position = {0.0f, 0.0f, 0.0f};
     MainCamera.target = {0.0f, 0.0f, 0.0f};
     MainCamera.up = {0.0f, 1.0f, 0.0f};
-    MainCamera.fovy = 75.0f; // Adjust if necessary
+    MainCamera.fovy = 100.0f; // Adjust if necessary
     MainCamera.projection = CAMERA_PERSPECTIVE;
 
     // Define transforms to be uploaded to GPU for instances
@@ -713,7 +731,7 @@ i32 main(i32 argc, char **argv)
 
             // Create a model matrix for each data point to position it
             MatrixTransformsRedshift[i] = MatrixIdentity();
-            MatrixTransformsRedshift[i] = MatrixMultiply(MatrixTransformsRedshift[i], MatrixScale(0.1f, 0.1f, 0.1f));
+            MatrixTransformsRedshift[i] = MatrixMultiply(MatrixTransformsRedshift[i], MatrixScale(10.0f, 10.0f, 10.0f));
             MatrixTransformsRedshift[i] = MatrixMultiply(MatrixTransformsRedshift[i], MatrixTranslate(X, Y, Z));
         }
     }
@@ -741,21 +759,42 @@ i32 main(i32 argc, char **argv)
 
     // Lighting
     {
-        // Set shader value: ambient light level
+        // Setting shader values
         i32 AmbientLoc = GetShaderLocation(CustomShader, "ambient");
-        f64 AmbientValue[4] = {0.2f, 0.2f, 0.2f, 1.0f};
+        f64 AmbientValue[4] = {1.0, 1.0, 1.0, 1.0};
         SetShaderValue(CustomShader, AmbientLoc, &AmbientValue, SHADER_UNIFORM_VEC4);
 
-        CreateLight(LIGHT_DIRECTIONAL, {500.0f, 500.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
+        i32 ColorDiffuseLoc = GetShaderLocation(CustomShader, "colorDiffuse");
+        f64 DiffuseValue[4] = {1.0, 1.0, 1.0, 1.0};
+        SetShaderValue(CustomShader, ColorDiffuseLoc, &DiffuseValue, SHADER_UNIFORM_VEC4);
+
+        // Like the sun shining on the earth
+        CreateLight(LIGHT_DIRECTIONAL, {1000.0f, 1000.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
+
+        // @Note(Victor): We can add more lights to the scene to better show the colors of the galaxies
+        CreateLight(LIGHT_DIRECTIONAL, {-1000.0f, -1000.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
+        CreateLight(LIGHT_DIRECTIONAL, {0.0f, 0.0f, 1000.0f}, Vector3Zero(), WHITE, CustomShader);
+        CreateLight(LIGHT_DIRECTIONAL, {0.0f, 0.0f, -1000.0f}, Vector3Zero(), WHITE, CustomShader);
+
+        // We can also add a point light at the center of the earth
+        CreateLight(LIGHT_POINT, {0.0f, 0.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
     }
 
     // Material
     {
         // NOTE: We are assigning the intancing shader to material.shader
         // to be used on mesh drawing with DrawMeshInstanced()
-        matInstances = LoadMaterialDefault();
+        Material GalaxyMaterial = LoadMaterialDefault();
+        GalaxyMaterial.shader = CustomShader;
+        GalaxyMaterial.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./resources/images/galaxy_test_texture.png");
+        GalaxyMaterial.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+
+        // Set the specular ammount
+        GalaxyMaterial.maps[MATERIAL_MAP_SPECULAR].value = 0.01f;
+
+        matInstances = GalaxyMaterial;
         matInstances.shader = CustomShader;
-        matInstances.maps[MATERIAL_MAP_DIFFUSE].color = BLUE;
+        matInstances.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     }
 
     printf("\n\tMemory usage before we start the game loop\n");
@@ -765,7 +804,7 @@ i32 main(i32 argc, char **argv)
     EarthModel = LoadModel("./resources/Earth_1_12756.glb");
 
     // Optionally, you can scale the model if needed
-    Matrix scaleMatrix = MatrixScale(0.05f, 0.05f, 0.05f);
+    Matrix scaleMatrix = MatrixScale(0.01f, 0.01f, 0.01f);
     EarthModel.transform = MatrixMultiply(EarthModel.transform, scaleMatrix);
 
     // Main loop
