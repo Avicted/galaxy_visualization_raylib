@@ -33,6 +33,7 @@ Below are the installation instructions for the required dependencies:
 - **CMake**
 - **Git**
 - **Clang** (or GCC)
+- **gdb** (optional)
 
 ### Installation Commands
 
