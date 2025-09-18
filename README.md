@@ -21,7 +21,7 @@ This program is a visualization of the data, not the solution to the assignment.
 
 ## Prerequisites
 
-This project can be built using plain g++ through build.sh (raylib is the only dependency), Meson, CMake, or Make. 
+This project can be built using plain clang through build.sh (raylib is the only dependency) or Meson.
 
 Below are the installation instructions for the required dependencies:
 
@@ -30,7 +30,6 @@ Below are the installation instructions for the required dependencies:
 - **Raylib**
 - **Base Development Tools** (e.g., `build-essential` on Ubuntu)
 - **Meson**
-- **CMake**
 - **Git**
 - **Clang** (or GCC)
 - **gdb** (optional)
@@ -40,62 +39,45 @@ Below are the installation instructions for the required dependencies:
 #### Arch Linux
 
 ```bash
-sudo pacman -S raylib base-devel meson git cmake clang
+sudo pacman -S raylib base-devel meson git clang
 ```
 
 #### Ubuntu
 
 ```bash
-sudo apt-get install -y raylib build-essential meson git cmake clang
+sudo apt-get install -y raylib build-essential meson git clang
 ```
 
 ### Build and Run the Project
 
 You can choose from one of the following build systems:
 - Meson (F5 in VSCode)
-- Make with CMake
 - build.sh
 
 
 ## Meson
-#### Setup:
 ```bash
+# Setup
 meson setup build --buildtype=release 
-```
 
-#### Build:
-```bash
+# Build
 meson compile -C build
-```
 
-#### Run:
-```bash
+# Run
 ./build/galaxy_visualization_raylib
-```
 
-#### Clean:
-```bash
+# Clean
 meson compile -C build --clean
 ```
 
-
-## Make
-#### Build:
+## Bash
 ```bash
-make
+# Build
+chmod +x ./build.sh
+
+# Run
+./build/galaxy_visualization_raylib
 ```
-
-#### Run:
-```bash
-make run
-```
-
-#### Clean:
-```bash
-make clean
-```
-
-
 
 ##  Demo
 
@@ -106,13 +88,5 @@ make clean
 ![screen](resources/images/screenshot.png "screenshot.png")
 
 ## Patch Notes
-
-- Spacebar: Pauses the program.
-- Added Makefile for Linux.
-- Added Meson build system for Linux.
-- The Meson build now links against the system-installed Raylib.
 - Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
-- Added Free Look Mode.
 - Redshift data taken from: https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat
-- Added build.sh for easy building on Linux. 
-- LShift to move slower in free look mode.

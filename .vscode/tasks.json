@@ -1,14 +1,34 @@
 {
     "tasks": [
         {
-            "label": "build debug meson",
+            "label": "Meson Setup",
             "type": "shell",
-            "command": "clear && meson setup build --buildtype=debug && cd build && ninja"
+            "command": "CC=clang meson setup --reconfigure build",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}",
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Reconfigure Meson build"
         },
         {
-            "label": "build mingw meson",
+            "label": "Meson Compile",
             "type": "shell",
-            "command": "meson setup build-mingw --cross-file windows32.ini --buildtype=debug && cd build-mingw && ninja"
+            "command": "meson compile -C build",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}",
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Compile Meson project"
         }
     ],
     "version": "2.0.0"

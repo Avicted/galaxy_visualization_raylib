@@ -86,7 +86,10 @@
         "*.ipp": "cpp",
         "deque": "cpp",
         "complex": "cpp",
-        "valarray": "cpp"
+        "valarray": "cpp",
+        "time.h": "c",
+        "stdlib.h": "c",
+        "signal.h": "c"
     },
     "dotnet.defaultSolution": "disable",
     "C_Cpp.default.compilerPath": "/usr/bin/clang++",

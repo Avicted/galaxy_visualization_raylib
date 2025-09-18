@@ -2,19 +2,20 @@
 
 set -xe
 
-# Remove the build directory if it exists
-rm -rf build/ > /dev/null 2>&1
+[ -d ./build ] && rm -rf ./build
+mkdir -p ./build
 
-# Create a build directory
-mkdir -p build > /dev/null 2>&1
+CC=clang
+CFLAGS="-std=c99 -ggdb -O0 -Wall -Wextra -Werror"
+LDLIBS="-lm -lraylib"
 
-# Copy all the files from src and includes to the build directory
-cp -r src/* build/
-cp -r includes/* build/
-cp -r resources/* build/
+SRC_FILES=(
+  "./src/main.c"
+)
+INCLUDE_DIRS="-I./include"
+OUTPUT_DIR="./build"
+EXECUTABLE_NAME="galaxy_visualization_raylib"
 
-# Build with g++
-g++ build/frontend.cpp -o galaxy_visualization_raylib -lraylib
+cp -r resources $OUTPUT_DIR
 
-# Run the executable
-./galaxy_visualization_raylib
+$CC $CFLAGS $INCLUDE_DIRS -o $OUTPUT_DIR/$EXECUTABLE_NAME ${SRC_FILES[@]} $LDLIBS
