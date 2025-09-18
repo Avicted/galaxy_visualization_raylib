@@ -5,9 +5,6 @@
 #include "includes.h"
 #include "raylib_includes.h"
 
-#define SCREEN_WIDTH = 640 * 2
-#define SCREEN_HEIGHT = 360 * 2
-
 // Types -------------------------------------------------------------------------
 typedef struct
 {
@@ -68,7 +65,9 @@ typedef struct
 
 } app_state_t;
 
-// Variables ---------------------------------------------------------------------
+// Constants ---------------------------------------------------------------------
+#define SCREEN_WIDTH = 640 * 2
+#define SCREEN_HEIGHT = 360 * 2
 
 const f64 PI_by_180 = (PI / 180.0);
 const char *data_a_filename = "./input_data/data_100k_arcmin.txt";
@@ -81,6 +80,25 @@ const unsigned long int MAX_REDSHIFT_DATA_POINTS = 100000UL; // @Note(Victor): T
 // Assuming speed of light in km/s for converting redshift to distance (simplified calculation)
 const f64 speed_of_light_kmh = 299792.458; // Speed of light in km/s
 const f64 hubble_constant = 70.0;          // Hubble constant in km/s/Mpc
+
+// Forward declarations ----------------------------------------------------------
+internal i32 app_platform_init(app_state_t *app_state);
+internal i32 app_init_shaders(app_state_t *app_state);
+internal i32 app_read_input_data(app_state_t *app_state);
+internal i32 app_init(app_state_t *app_state);
+internal void app_render(app_state_t *app_state, f64 dt);
+internal void app_update(app_state_t *app_state, f64 dt);
+internal void app_cleanup(app_state_t *app_state);
+
+internal i32 upload_matrix_transforms_to_gpu(app_state_t *app_state);
+internal i32 initialize_transforms_course_data(app_state_t *app_state);
+internal bool read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocation);
+internal bool read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *DataPointsLocation);
+internal void print_memory_usage(app_state_t *app_state);
+internal void rotate_camera_around_origo(app_state_t *app_state, f64 dt);
+internal void handle_window_resize(app_state_t *app_state);
+internal void parse_input_args(app_state_t *app_state, i32 argc, char **argv);
+internal f64 redshift_to_distance(f64 redshift);
 
 // Redshift data calculations
 // ----------------------------------------------------------------------------------
@@ -164,7 +182,7 @@ handle_window_resize(app_state_t *app_state)
 
     if (IsKeyPressed(KEY_ENTER) && (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)))
     {
-        i32 Display = GetCurrentMonitor();
+        i32 current_display = GetCurrentMonitor();
 
         if (IsWindowFullscreen())
         {
@@ -174,7 +192,7 @@ handle_window_resize(app_state_t *app_state)
         else
         {
             // If we are not full screen, set the window size to match the monitor we are on
-            SetWindowSize(GetMonitorWidth(Display), GetMonitorHeight(Display));
+            SetWindowSize(GetMonitorWidth(current_display), GetMonitorHeight(current_display));
         }
 
         ToggleFullscreen();
@@ -187,37 +205,37 @@ handle_window_resize(app_state_t *app_state)
 internal void
 rotate_camera_around_origo(app_state_t *app_state, f64 dt)
 {
-    Camera3D *Cam = &app_state->main_camera;
-    f64 Speed = 10.0f * dt;
-    f64 VerticalSpeed = 5.0f * dt;
+    Camera3D *cam = &app_state->main_camera;
+    f64 speed = 10.0f * dt;
+    f64 vertical_speed = 5.0f * dt;
 
-    local_persist f64 Yaw = 45.80f;
-    local_persist f64 Pitch = 42.12f;
-    local_persist bool CursorEnabled = false;
+    local_persist f64 yaw = 45.80f;
+    local_persist f64 pitch = 42.12f;
+    local_persist bool cursor_enabled = false;
 
     local_persist Vector3 direction;
-    direction.x = cosf(DEG2RAD * Pitch) * cosf(DEG2RAD * Yaw);
-    direction.y = sinf(DEG2RAD * Pitch);
-    direction.z = cosf(DEG2RAD * Pitch) * sinf(DEG2RAD * Yaw);
+    direction.x = cosf(DEG2RAD * pitch) * cosf(DEG2RAD * yaw);
+    direction.y = sinf(DEG2RAD * pitch);
+    direction.z = cosf(DEG2RAD * pitch) * sinf(DEG2RAD * yaw);
     direction = Vector3Normalize(direction);
 
-    Vector3 right = Vector3Normalize(Vector3CrossProduct(direction, Cam->up));
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(direction, cam->up));
     Vector3 up = Vector3Normalize(Vector3CrossProduct(right, direction));
 
     if (app_state->is_paused)
     {
         // Disable the cursor to lock it to the center and hide it
-        if (CursorEnabled)
+        if (cursor_enabled)
         {
             DisableCursor();
-            CursorEnabled = false;
+            cursor_enabled = false;
 
             // Set the camera to look at the data from the earths position, roughly
-            Cam->position = (Vector3){4.911170f, -4.564987f, 11.718232f};
-            Cam->target = (Vector3){5.357430f, -3.781510f, 12.150687f};
+            cam->position = (Vector3){4.911170f, -4.564987f, 11.718232f};
+            cam->target = (Vector3){5.357430f, -3.781510f, 12.150687f};
             direction = (Vector3){-0.446259f, -0.783477f, -0.432455f};
-            Yaw = -136.600;
-            Pitch = -51.580;
+            yaw = -136.600;
+            pitch = -51.580;
         }
 
         // printf("\tFree Look mode\n");
@@ -227,71 +245,75 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
         // printf("\tYaw: %f\n", Yaw);
         // printf("\tPitch: %f\n", Pitch);
 
-        Vector2 mouseDelta = GetMouseDelta();
+        Vector2 mouse_delta = GetMouseDelta();
 
         // Update yaw and pitch based on mouse movement
-        Yaw += mouseDelta.x * 0.1f;
-        Pitch += mouseDelta.y * 0.1f;
+        yaw += mouse_delta.x * 0.1f;
+        pitch += mouse_delta.y * 0.1f;
 
         // Clamp pitch to avoid flipping the camera
-        if (Pitch > 89.0f)
-            Pitch = 89.0f;
-        if (Pitch < -89.0f)
-            Pitch = -89.0f;
+        if (pitch > 89.0f)
+        {
+            pitch = 89.0f;
+        }
+        if (pitch < -89.0f)
+        {
+            pitch = -89.0f;
+        }
 
         // Go slower with LShift
         if (IsKeyDown(KEY_LEFT_SHIFT))
         {
-            Speed *= 0.1f;
-            VerticalSpeed *= 0.1f;
+            speed *= 0.1f;
+            vertical_speed *= 0.1f;
         }
 
         // Move camera based on input
         if (IsKeyDown(KEY_W))
         {
-            Cam->position = Vector3Subtract(Cam->position, Vector3Scale(direction, Speed));
+            cam->position = Vector3Subtract(cam->position, Vector3Scale(direction, speed));
         }
         if (IsKeyDown(KEY_S))
         {
-            Cam->position = Vector3Add(Cam->position, Vector3Scale(direction, Speed));
+            cam->position = Vector3Add(cam->position, Vector3Scale(direction, speed));
         }
         if (IsKeyDown(KEY_D))
         {
-            Cam->position = Vector3Subtract(Cam->position, Vector3Scale(right, Speed));
+            cam->position = Vector3Subtract(cam->position, Vector3Scale(right, speed));
         }
         if (IsKeyDown(KEY_A))
         {
-            Cam->position = Vector3Add(Cam->position, Vector3Scale(right, Speed));
+            cam->position = Vector3Add(cam->position, Vector3Scale(right, speed));
         }
         if (IsKeyDown(KEY_Q))
         {
-            Cam->position = Vector3Subtract(Cam->position, Vector3Scale(up, VerticalSpeed));
+            cam->position = Vector3Subtract(cam->position, Vector3Scale(up, vertical_speed));
         }
         if (IsKeyDown(KEY_E))
         {
-            Cam->position = Vector3Add(Cam->position, Vector3Scale(up, VerticalSpeed));
+            cam->position = Vector3Add(cam->position, Vector3Scale(up, vertical_speed));
         }
 
         // Update camera target to reflect the new direction
-        Cam->target = Vector3Subtract(Cam->position, direction);
+        cam->target = Vector3Subtract(cam->position, direction);
     }
     else
     {
         // If not in free look mode, enable the cursor and restore the original camera logic
-        if (!CursorEnabled)
+        if (!cursor_enabled)
         {
             EnableCursor();
-            CursorEnabled = true;
+            cursor_enabled = true;
         }
 
-        local_persist f64 PreviousTimeSinceStart = 0.0f;
-        PreviousTimeSinceStart += dt * 0.2f;
+        local_persist f64 previous_time_since_start = 0.0f;
+        previous_time_since_start += dt * 0.2f;
 
-        Cam->position.x = 25.0f * cosf(PreviousTimeSinceStart) * app_state->zoom;
-        Cam->position.y = 50.0f;
-        Cam->position.z = 25.0f * sinf(PreviousTimeSinceStart) * app_state->zoom;
+        cam->position.x = 25.0f * cosf(previous_time_since_start) * app_state->zoom;
+        cam->position.y = 50.0f;
+        cam->position.z = 25.0f * sinf(previous_time_since_start) * app_state->zoom;
 
-        Cam->target = Vector3Zero();
+        cam->target = Vector3Zero();
     }
 
     // printf("Direction: x=%f, y=%f, z=%f\n", direction.x, direction.y, direction.z);
@@ -300,7 +322,7 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
 }
 
 internal void
-game_update(app_state_t *app_state, f64 dt)
+app_update(app_state_t *app_state, f64 dt)
 {
     handle_window_resize(app_state);
 
@@ -353,7 +375,7 @@ game_update(app_state_t *app_state, f64 dt)
 }
 
 internal void
-game_render(app_state_t *app_state, f64 dt)
+app_render(app_state_t *app_state, f64 dt)
 {
     (void)dt;
 
@@ -395,15 +417,15 @@ game_render(app_state_t *app_state, f64 dt)
     DrawSphere((Vector3){0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
 
     // Draw the Earth model at the origin (0, 0, 0)
-    Vector3 EarthPosition = {0.0f, 0.0f, 0.0f};
-    const f64 EarthScale = 1.0f;
-    DrawModel(app_state->earth_model, EarthPosition, EarthScale, WHITE);
+    Vector3 earth_pos = {0.0f, 0.0f, 0.0f};
+    const f64 earth_scale = 1.0f;
+    DrawModel(app_state->earth_model, earth_pos, earth_scale, WHITE);
 
     // Draw instanced meshes
     if (app_state->data_to_draw == DRAW_DATA_A || app_state->data_to_draw == DRAW_DATA_ALL)
     {
-        Color MyDARKBLUE = {0, 0, 255, 255};
-        app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = MyDARKBLUE;
+        const Color DARK_BLUE = {0, 0, 255, 255};
+        app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = DARK_BLUE;
         DrawMeshInstanced(app_state->sphere_mesh, app_state->material_instance, app_state->matrix_transforms_a, MAX_DATA_POINTS);
     }
 
@@ -435,7 +457,8 @@ game_render(app_state_t *app_state, f64 dt)
     // Press F11 to toggle fullscreen
     DrawTextEx(app_state->main_font, TextFormat("Press F11 to toggle fullscreen"), (Vector2){10, 70}, 16, 2, WHITE);
 
-    // Press 1, 2 or 3 to toggle which data to draw
+    // @TODO(Victor): Disable all redshift data for now..
+    // Press 1, 2, 3 or 4 to toggle which data to draw
     DrawTextEx(app_state->main_font, TextFormat("Press 1, 2, 3 or 4 to toggle which data to draw"), (Vector2){10, 90}, 16, 2, WHITE);
 
     // Red are uniformly distributed, blue are real data
@@ -467,13 +490,11 @@ game_render(app_state_t *app_state, f64 dt)
     if (app_state->is_paused)
     {
         const char *IsPausedText = "Free Look";
-        // const int IsPausedTextLength = strlen(IsPausedText);
         DrawTextEx(app_state->main_font, IsPausedText, (Vector2){app_state->window_width - 128.0f - 64.0f, 30}, 20, 2, PURPLE);
     }
     else
     {
         const char *IsPausedText = "Auto Look";
-        // const int IsPausedTextLength = strlen(IsPausedText);
         DrawTextEx(app_state->main_font, IsPausedText, (Vector2){app_state->window_width - 64.0f - 128.0f - 32.0f, 30}, 20, 2, GREEN);
     }
 
@@ -488,7 +509,7 @@ print_memory_usage(app_state_t *app_state)
 }
 
 internal void
-cleanup(app_state_t *app_state)
+app_cleanup(app_state_t *app_state)
 {
     CloseWindow(); // Close window and OpenGL context
     printf("\n\tClosed window and OpenGL context\n");
@@ -527,20 +548,8 @@ cleanup(app_state_t *app_state)
     Assert(app_state->CPU_memory_allocated == 0);
 }
 
-// internal void
-// sig_int_handler(app_state_t *app_state, i32 Signal)
-// {
-//     (void)Signal;
-//
-//     printf("\tCaught SIGINT, exiting peacefully!\n");
-//
-//     cleanup(app_state);
-//
-//     exit(0);
-// }
-
 internal bool
-read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *DataPointsLocation)
+read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *data_points_location)
 {
     // Data format:
     // Name: Galaxy name
@@ -556,14 +565,14 @@ read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *DataPoin
         return false;
     }
 
-    const int bufferSize = 4096;
-    char Line[bufferSize]; // Buffer to store each line from the file
+    const int buffer_size = 4096;
+    char line[buffer_size]; // Buffer to store each line from the file
 
     // Skip the header lines (13 lines in this case)
-    const int HeaderLines = 13;
-    for (int i = 0; i < HeaderLines; ++i)
+    const int header_lines = 13;
+    for (int i = 0; i < header_lines; ++i)
     {
-        if (fgets(Line, sizeof(Line), f) == NULL)
+        if (fgets(line, sizeof(line), f) == NULL)
         {
             printf("Error reading header!\n");
             fclose(f);
@@ -572,37 +581,37 @@ read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *DataPoin
     }
 
     unsigned long int i = 0;
-    while (fgets(Line, sizeof(Line), f) != NULL && i < MAX_REDSHIFT_DATA_POINTS)
+    while (fgets(line, sizeof(line), f) != NULL && i < MAX_REDSHIFT_DATA_POINTS)
     {
         // Remove leading/trailing whitespace (if any)
-        char *trimmedLine = strtok(Line, "\n");
+        char *trimmed_line = strtok(line, "\n");
 
         // Skip empty lines
-        if (trimmedLine == NULL || strlen(trimmedLine) == 0)
+        if (trimmed_line == NULL || strlen(trimmed_line) == 0)
             continue;
 
         // Tokenize the line assuming space-separated values
-        char *Token = strtok(trimmedLine, " ");
+        char *token = strtok(trimmed_line, " ");
         int j = 0;
 
-        while (Token != NULL)
+        while (token != NULL)
         {
             switch (j)
             {
             case 1: // RA (1950)
-                DataPointsLocation[i].right_ascension = atof(Token);
+                data_points_location[i].right_ascension = atof(token);
                 break;
             case 2: // DEC
-                DataPointsLocation[i].declination = atof(Token);
+                data_points_location[i].declination = atof(token);
                 break;
             case 4: // Redshift (VH)
-                DataPointsLocation[i].redshift = atof(Token);
+                data_points_location[i].redshift = atof(token);
                 break;
             default:
                 break;
             }
 
-            Token = strtok(NULL, " "); // Continue to the next token
+            token = strtok(NULL, " "); // Continue to the next token
             j++;
         }
 
@@ -620,18 +629,17 @@ read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *DataPoin
 }
 
 internal bool
-read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocation)
+read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_location)
 {
-    FILE *f = fopen(FileName, "r");
+    FILE *f = fopen(file_name, "r");
     if (f == NULL)
     {
         printf("Error opening file!\n");
         return (false);
     }
 
-    // read the header
-    char Line[1024]; // Adjust size as needed
-
+    // Read the header
+    char Line[1024];
     if (fgets(Line, sizeof(Line), f) == NULL)
     {
         printf("Error reading header!\n");
@@ -647,19 +655,17 @@ read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocatio
 
         // @Note(Victor): We expect the input data to be separated by tabs !!!
         // Parse the line
-        char *Token = strtok(Line, "\t");
+        char *token = strtok(Line, "\t");
         i32 j = 0;
-        while (Token != NULL)
+        while (token != NULL)
         {
-            // printf("Token: %s\n", Token);
-
             if (j == 0)
             {
-                DataPointsLocation[i].right_ascension = atof(Token);
+                data_points_location[i].right_ascension = atof(token);
             }
             else if (j == 1)
             {
-                DataPointsLocation[i].declination = atof(Token);
+                data_points_location[i].declination = atof(token);
             }
             else
             {
@@ -667,7 +673,7 @@ read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocatio
                 return (false);
             }
 
-            Token = strtok(NULL, "\t");
+            token = strtok(NULL, "\t");
             j++;
         }
 
@@ -679,19 +685,9 @@ read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocatio
     return (true);
 }
 
-i32 main(i32 argc, char **argv)
+internal i32
+app_init(app_state_t *app_state)
 {
-    // signal(SIGINT, sig_int_handler);
-
-    app_state_t *app_state = (app_state_t *)calloc(1, sizeof(app_state_t));
-    if (app_state == NULL)
-    {
-        printf("Error allocating memory for app_state!\n");
-        return (1);
-    }
-
-    parse_input_args(app_state, argc, argv);
-
     app_state->CPU_memory_allocated = 0L;
     app_state->debug = false;
     app_state->data_is_loaded = false;
@@ -702,6 +698,12 @@ i32 main(i32 argc, char **argv)
     app_state->redshift_data = NULL;
 
     app_state->main_camera = (Camera3D){0};
+    app_state->main_camera.position = (Vector3){0.0f, 0.0f, 0.0f};
+    app_state->main_camera.target = (Vector3){0.0f, 0.0f, 0.0f};
+    app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
+    app_state->main_camera.fovy = 65.0f;
+    app_state->main_camera.projection = CAMERA_PERSPECTIVE;
+
     app_state->zoom = 1.0f * PI;
     app_state->custom_shader = (Shader){0};
 
@@ -715,6 +717,52 @@ i32 main(i32 argc, char **argv)
 
     app_state->data_to_draw = DRAW_DATA_ALL;
 
+    i32 app_read_input_data_result = app_read_input_data(app_state);
+    if (app_read_input_data_result != 0)
+    {
+        fprintf(stderr, "ERROR: Could not perform app_read_input_data.\n");
+        return (1);
+    }
+
+    printf("\tHello from raylib_galaxy_application!\n\n");
+
+    i32 matrix_gpu_upload_result = upload_matrix_transforms_to_gpu(app_state);
+    if (matrix_gpu_upload_result != 0)
+    {
+        fprintf(stderr, "ERROR: Could not upload matrix transforms to the GPU.\n");
+        return (1);
+    }
+
+    i32 platform_init_result = app_platform_init(app_state);
+    if (platform_init_result != 0)
+    {
+        fprintf(stderr, "ERROR: Could not initialize the platform API (Raylib)\n");
+        return (1);
+    }
+
+    app_state->main_font = LoadFontEx("./resources/fonts/SuperMarioBros2.ttf", 32, 0, 250);
+    app_state->sphere_mesh = GenMeshSphere(0.2f, 16, 16);
+
+    i32 shader_init_result = app_init_shaders(app_state);
+    if (shader_init_result != 0)
+    {
+        fprintf(stderr, "ERROR: Could not initialize the shader(s)\n");
+        return (1);
+    }
+
+    printf("\n\tMemory usage before we start the main program loop\n");
+    print_memory_usage(app_state);
+
+    app_state->earth_model = LoadModel("./resources/Earth_1_12756.glb");
+    Matrix earch_scale_matrix = MatrixScale(0.01f, 0.01f, 0.01f);
+    app_state->earth_model.transform = MatrixMultiply(app_state->earth_model.transform, earch_scale_matrix);
+
+    return 0;
+}
+
+internal i32
+app_read_input_data(app_state_t *app_state)
+{
     app_state->data_points_a = (arcmin_data_t *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data_t));
     if (app_state->data_points_a == NULL)
     {
@@ -743,7 +791,7 @@ i32 main(i32 argc, char **argv)
     else
     {
         printf("\tReadInputDataFromFile: %s failed!\n", data_a_filename);
-        cleanup(app_state);
+        app_cleanup(app_state);
         return (1);
     }
 
@@ -754,7 +802,7 @@ i32 main(i32 argc, char **argv)
     else
     {
         printf("\tReadInputDataFromFile: %s failed!\n", data_b_filename);
-        cleanup(app_state);
+        app_cleanup(app_state);
         return (1);
     }
 
@@ -766,137 +814,152 @@ i32 main(i32 argc, char **argv)
     else
     {
         printf("Failed to load redshift data from %s\n", redshift_data_filename);
-        cleanup(app_state);
+        app_cleanup(app_state);
         return 1;
     }
 
-    printf("\tHello from raylib_galaxy_application!\n\n");
-
-    unsigned long int Count = 0;
+    // Assert that all the input data was read ----------------------------------------
+    unsigned long int data_count_read = 0;
     for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
     {
         if (app_state->data_points_a[i].right_ascension != 0.0f)
         {
-            Count++;
+            data_count_read++;
         }
     }
 
-    Assert(Count == MAX_DATA_POINTS);
+    Assert(data_count_read == MAX_DATA_POINTS);
     Assert(app_state->data_points_b != NULL);
 
-    Count = 0;
+    data_count_read = 0;
     for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
     {
         if (app_state->data_points_b[i].right_ascension != 0.0f)
         {
-            Count++;
+            data_count_read++;
         }
     }
 
-    Assert(Count == MAX_DATA_POINTS);
+    Assert(data_count_read == MAX_DATA_POINTS);
 
     app_state->data_is_loaded = true;
 
-    // Set the camera to rotate around the center of the data
-    // main_camera.position = {0.0f, 60.0f, 100.0f};
-    app_state->main_camera.position = (Vector3){0.0f, 0.0f, 0.0f};
-    app_state->main_camera.target = (Vector3){0.0f, 0.0f, 0.0f};
-    app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
-    app_state->main_camera.fovy = 65.0f; // Adjust if necessary
-    app_state->main_camera.projection = CAMERA_PERSPECTIVE;
+    return (0);
+}
 
-    // Define transforms to be uploaded to GPU for instances
+internal i32
+initialize_transforms_course_data(app_state_t *app_state)
+{
+    for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
     {
-        app_state->matrix_transforms_a = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
-        app_state->CPU_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
-
-        app_state->matrix_transforms_b = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
-        app_state->CPU_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
-
-        app_state->matrix_transforms_redshift = (Matrix *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(Matrix));
-        app_state->CPU_memory_allocated += MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
-
-        // Matrix rotation = MatrixRotateXYZ((Vector3){0.0f, 0.0f, 0.0f});
-
-        for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
+        // data_points_a real galaxies
         {
-            // data_points_a real galaxies
-            {
-                // Transform the arc minutes into radians that the trigonometric functions take as input. (sinf, cosf, tanf)
-                f64 RightAscensionRad = (app_state->data_points_a[i].right_ascension / 60.0f) * PI_by_180;
-                f64 DeclinationRad = (app_state->data_points_a[i].declination / 60.0f) * PI_by_180;
+            // Transform the arc minutes into radians that the trigonometric functions take as input. (sinf, cosf, tanf)
+            f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / 60.0f) * PI_by_180;
+            f64 declination_rad = (app_state->data_points_a[i].declination / 60.0f) * PI_by_180;
 
-                // Calculate the position on the sphere using spherical coordinates
-                f64 Radius = 50.0f;
-                f64 X = Radius * cosf(RightAscensionRad) * cosf(DeclinationRad);
-                f64 Y = Radius * sinf(DeclinationRad);
-                f64 Z = Radius * sinf(RightAscensionRad) * cosf(DeclinationRad);
+            // Calculate the position on the sphere using spherical coordinates
+            f64 radius = 50.0f;
+            f64 X = radius * cosf(right_ascension_rad) * cosf(declination_rad);
+            f64 Y = radius * sinf(declination_rad);
+            f64 Z = radius * sinf(right_ascension_rad) * cosf(declination_rad);
 
-                // Create a model matrix for each data point to position it
-                app_state->matrix_transforms_a[i] = MatrixIdentity();
-                app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixScale(0.1f, 0.1f, 0.1f));
-                app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate(X, Y, Z));
-            }
+            // Create a model matrix for each data point to position it
+            app_state->matrix_transforms_a[i] = MatrixIdentity();
+            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixScale(0.1f, 0.1f, 0.1f));
+            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate(X, Y, Z));
+        }
 
-            // data_points_b uniformly distributed (galaxies)
-            {
-                f64 RightAscensionRad = (app_state->data_points_b[i].right_ascension / 60.0f) * PI_by_180;
-                f64 DeclinationRad = (app_state->data_points_b[i].declination / 60.0f) * PI_by_180;
-
-                // Calculate the position on the sphere using spherical coordinates
-                f64 Radius = 50.0f;
-                f64 X = Radius * cosf(RightAscensionRad) * cosf(DeclinationRad);
-                f64 Y = Radius * sinf(DeclinationRad);
-                f64 Z = Radius * sinf(RightAscensionRad) * cosf(DeclinationRad);
-
-                // Create a model matrix for each data point to position it
-                app_state->matrix_transforms_b[i] = MatrixIdentity();
-                app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixScale(0.1f, 0.1f, 0.1f));
-                app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate(X, Y, Z));
-            }
-        } // end of for loop for the course data
-
-        // Redshift data points with distance from the earth
-        // Redshift can be mapped to a distance value in megaparsecs (Mpc) or another suitable unit for distance.
-        // Assuming Redshift has already been scaled to represent the distance directly, we use it as the radius.
-        for (unsigned long int i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
+        // data_points_b uniformly distributed (galaxies)
         {
-            // Convert RA and DEC to radians
-            f64 rightAscensionRad = (app_state->redshift_data[i].right_ascension / 60.0f) * PI_by_180;
-            f64 declinationRad = (app_state->redshift_data[i].declination / 60.0f) * PI_by_180;
+            f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / 60.0f) * PI_by_180;
+            f64 declination_rad = (app_state->data_points_b[i].declination / 60.0f) * PI_by_180;
 
-            // Convert redshift to distance in Megaparsecs
-            f64 distanceMpc = redshift_to_distance(app_state->redshift_data[i].redshift);
+            // Calculate the position on the sphere using spherical coordinates
+            f64 radius = 50.0f;
+            f64 X = radius * cosf(right_ascension_rad) * cosf(declination_rad);
+            f64 Y = radius * sinf(declination_rad);
+            f64 Z = radius * sinf(right_ascension_rad) * cosf(declination_rad);
 
-            // Convert distance to some meaningful scale for your simulation
-            // For example, if you want to work in parsecs instead of megaparsecs:
-            f64 distance = distanceMpc * hubble_constant; // Convert Mpc to parsecs
-
-            // Calculate the position in 3D space using spherical to Cartesian conversion
-            f64 X = distance * cos(declinationRad) * cos(rightAscensionRad);
-            f64 Y = distance * cos(declinationRad) * sin(rightAscensionRad);
-            f64 Z = distance * sin(declinationRad);
-
-            // Apply this position to your model matrix (for example)
-            app_state->matrix_transforms_redshift[i] = MatrixIdentity();
-            app_state->matrix_transforms_redshift[i] = MatrixMultiply(app_state->matrix_transforms_redshift[i], MatrixScale(10000.0f, 10000.0f, 10000.0f));
-            app_state->matrix_transforms_redshift[i] = MatrixMultiply(app_state->matrix_transforms_redshift[i], MatrixTranslate(X, Y, Z));
+            // Create a model matrix for each data point to position it
+            app_state->matrix_transforms_b[i] = MatrixIdentity();
+            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixScale(0.1f, 0.1f, 0.1f));
+            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate(X, Y, Z));
         }
     }
 
-    // Raylib
+    return 0;
+}
+
+internal i32
+upload_matrix_transforms_to_gpu(app_state_t *app_state)
+{
+
+    app_state->matrix_transforms_a = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
+    if (app_state->matrix_transforms_a == NULL)
     {
-        SetTraceLogLevel(LOG_WARNING);
-        SetConfigFlags(FLAG_WINDOW_RESIZABLE);
-        InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
-        SetTargetFPS(60);
+        fprintf(stderr, "ERROR: Could not allocate matrix_transforms_a.\n");
+        return (1);
+    }
+    app_state->CPU_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
+
+    app_state->matrix_transforms_b = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
+    if (app_state->matrix_transforms_b == NULL)
+    {
+        fprintf(stderr, "ERROR: Could not allocate matrix_transforms_b.\n");
+        return (1);
+    }
+    app_state->CPU_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
+
+    app_state->matrix_transforms_redshift = (Matrix *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(Matrix));
+    if (app_state->matrix_transforms_redshift == NULL)
+    {
+        fprintf(stderr, "ERROR: Could not allocate matrix_transforms_redshift.\n");
+        return (1);
+    }
+    app_state->CPU_memory_allocated += MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
+
+    i32 course_data_init_result = initialize_transforms_course_data(app_state);
+    if (course_data_init_result != 0)
+    {
+        fprintf(stderr, "ERROR: Could not initialize course data matrix transforms.\n");
+        return (1);
     }
 
-    app_state->main_font = LoadFontEx("./resources/fonts/SuperMarioBros2.ttf", 32, 0, 250);
-    app_state->custom_shader = LoadShader("./shaders/lighting_instancing.vs", "./shaders/lighting.fs");
-    app_state->sphere_mesh = GenMeshSphere(0.2f, 16, 16);
+    // Redshift data points with distance from the earth
+    // Redshift can be mapped to a distance value in megaparsecs (Mpc) or another suitable unit for distance.
+    // Assuming Redshift has already been scaled to represent the distance directly, we use it as the radius.
+    for (unsigned long int i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
+    {
+        // Convert RA and DEC to radians
+        f64 right_ascension_rad = (app_state->redshift_data[i].right_ascension / 60.0f) * PI_by_180;
+        f64 declination_rad = (app_state->redshift_data[i].declination / 60.0f) * PI_by_180;
 
-    // Get shader locations
+        // Convert redshift to distance in Megaparsecs
+        f64 distance_mpc = redshift_to_distance(app_state->redshift_data[i].redshift);
+
+        // Convert distance to some meaningful scale for your simulation
+        // For example, if you want to work in parsecs instead of megaparsecs:
+        f64 distance = distance_mpc * hubble_constant; // Convert Mpc to parsecs
+
+        // Calculate the position in 3D space using spherical to Cartesian conversion
+        f64 X = distance * cos(declination_rad) * cos(right_ascension_rad);
+        f64 Y = distance * cos(declination_rad) * sin(right_ascension_rad);
+        f64 Z = distance * sin(declination_rad);
+
+        // Apply this position to your model matrix (for example)
+        app_state->matrix_transforms_redshift[i] = MatrixIdentity();
+        app_state->matrix_transforms_redshift[i] = MatrixMultiply(app_state->matrix_transforms_redshift[i], MatrixScale(10000.0f, 10000.0f, 10000.0f));
+        app_state->matrix_transforms_redshift[i] = MatrixMultiply(app_state->matrix_transforms_redshift[i], MatrixTranslate(X, Y, Z));
+    }
+
+    return 0;
+}
+
+internal i32
+app_init_shaders(app_state_t *app_state)
+{
+    app_state->custom_shader = LoadShader("./shaders/lighting_instancing.vs", "./shaders/lighting.fs");
     app_state->custom_shader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(app_state->custom_shader, "mvp");
     app_state->custom_shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(app_state->custom_shader, "viewPos");
     app_state->custom_shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(app_state->custom_shader, "instanceTransform");
@@ -904,13 +967,13 @@ i32 main(i32 argc, char **argv)
     // Lighting
     {
         // Setting shader values
-        i32 AmbientLoc = GetShaderLocation(app_state->custom_shader, "ambient");
-        f64 AmbientValue[4] = {1.0, 1.0, 1.0, 1.0};
-        SetShaderValue(app_state->custom_shader, AmbientLoc, &AmbientValue, SHADER_UNIFORM_VEC4);
+        i32 ambient_loc = GetShaderLocation(app_state->custom_shader, "ambient");
+        f64 ambient_value[4] = {1.0, 1.0, 1.0, 1.0};
+        SetShaderValue(app_state->custom_shader, ambient_loc, &ambient_value, SHADER_UNIFORM_VEC4);
 
-        i32 ColorDiffuseLoc = GetShaderLocation(app_state->custom_shader, "colorDiffuse");
-        f64 DiffuseValue[4] = {1.0, 1.0, 1.0, 1.0};
-        SetShaderValue(app_state->custom_shader, ColorDiffuseLoc, &DiffuseValue, SHADER_UNIFORM_VEC4);
+        i32 color_diffuse_loc = GetShaderLocation(app_state->custom_shader, "colorDiffuse");
+        f64 diffuse_value[4] = {1.0, 1.0, 1.0, 1.0};
+        SetShaderValue(app_state->custom_shader, color_diffuse_loc, &diffuse_value, SHADER_UNIFORM_VEC4);
 
         // Like the sun shining on the earth
         CreateLight(LIGHT_DIRECTIONAL, (Vector3){1000.0f, 1000.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
@@ -928,43 +991,65 @@ i32 main(i32 argc, char **argv)
     {
         // NOTE: We are assigning the intancing shader to material.shader
         // to be used on mesh drawing with DrawMeshInstanced()
-        Material GalaxyMaterial = LoadMaterialDefault();
-        GalaxyMaterial.shader = app_state->custom_shader;
+        Material galaxy_material = LoadMaterialDefault();
+        galaxy_material.shader = app_state->custom_shader;
 
-        GalaxyMaterial.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./resources/images/galaxy_test_texture_diffuse.png");
-        GalaxyMaterial.maps[MATERIAL_MAP_SPECULAR].texture = LoadTexture("./resources/images/galaxy_test_texture_specular.png");
+        galaxy_material.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./resources/images/galaxy_test_texture_diffuse.png");
+        galaxy_material.maps[MATERIAL_MAP_SPECULAR].texture = LoadTexture("./resources/images/galaxy_test_texture_specular.png");
 
-        GalaxyMaterial.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-        GalaxyMaterial.maps[MATERIAL_MAP_SPECULAR].value = 1.0f;
+        galaxy_material.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+        galaxy_material.maps[MATERIAL_MAP_SPECULAR].value = 1.0f;
 
         // Set the shininess for specular reflections
         float shininess = 32.0f;
-        SetShaderValue(GalaxyMaterial.shader, GetShaderLocation(GalaxyMaterial.shader, "shininess"), &shininess, SHADER_UNIFORM_FLOAT);
+        SetShaderValue(galaxy_material.shader, GetShaderLocation(galaxy_material.shader, "shininess"), &shininess, SHADER_UNIFORM_FLOAT);
 
-        app_state->material_instance = GalaxyMaterial;
+        app_state->material_instance = galaxy_material;
         app_state->material_instance.shader = app_state->custom_shader;
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     }
 
-    printf("\n\tMemory usage before we start the game loop\n");
-    print_memory_usage(app_state);
+    return 0;
+}
 
-    // Load the Earth model
-    app_state->earth_model = LoadModel("./resources/Earth_1_12756.glb");
+internal i32
+app_platform_init(app_state_t *app_state)
+{
+    SetTraceLogLevel(LOG_WARNING);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
+    SetTargetFPS(60);
 
-    // Optionally, you can scale the model if needed
-    Matrix scaleMatrix = MatrixScale(0.01f, 0.01f, 0.01f);
-    app_state->earth_model.transform = MatrixMultiply(app_state->earth_model.transform, scaleMatrix);
+    return 0;
+}
 
-    // Main loop
-    while (!WindowShouldClose()) // Detect window close button or ESC key
+i32 main(i32 argc, char **argv)
+{
+    app_state_t *app_state = (app_state_t *)calloc(1, sizeof(app_state_t));
+    if (app_state == NULL)
     {
-        f64 DeltaTime = GetFrameTime();
-        game_update(app_state, DeltaTime);
-        game_render(app_state, DeltaTime);
+        printf("Error allocating memory for app_state!\n");
+        return (1);
     }
 
-    cleanup(app_state);
+    parse_input_args(app_state, argc, argv);
+
+    i32 app_init_result = app_init(app_state);
+    if (app_init_result != 0)
+    {
+        fprintf(stderr, "ERROR: app_init failed.\n");
+        return (1);
+    }
+
+    // Main loop
+    while (!WindowShouldClose())
+    {
+        f64 dt = GetFrameTime();
+        app_update(app_state, dt);
+        app_render(app_state, dt);
+    }
+
+    app_cleanup(app_state);
 
     return (0);
 }
