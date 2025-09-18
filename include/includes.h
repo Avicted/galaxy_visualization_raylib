@@ -1,27 +1,21 @@
 #ifndef INCLUDES_H
 #define INCLUDES_H
 
-// Standard library
-// #include <iostream>
 #include <signal.h>
-// #include <string>
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
 #include <stdint.h>
 
-// If Linux
 #ifdef __linux__
 #include <string.h>
 #include <sys/time.h>
 #endif
 
-// If Windows
 #ifdef _WIN32
 // Nothing to include
 #endif
 
-// Program specific stuff --------------------------------------
 #define local_persist static   // localy scoped persisted variable
 #define global_variable static // globaly scoped variable in the same translation unit
 #define internal static        // localy scoped function to the translation unit
@@ -45,8 +39,7 @@ typedef float f32;
 typedef double f64;
 
 // Macros ------------------------
-// @Note(Victor): Write straight to the null pointer to crash the program
-// @Note(Victor): *(int *)0 = 0;
+// @Note(Victor): Write straight to the null pointer to crash the program: *(int *)0 = 0;
 #define Assert(Expression) \
     if (!(Expression))     \
     {                      \
