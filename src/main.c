@@ -28,7 +28,7 @@ typedef enum
 
 typedef struct
 {
-    u64 CPU_memory_allocated;
+    u64 cpu_memory_allocated;
 
     arcmin_data_t arcmin_data;
     draw_data_t draw_data;
@@ -66,16 +66,13 @@ typedef struct
 } app_state_t;
 
 // Constants ---------------------------------------------------------------------
-#define SCREEN_WIDTH = 640 * 2
-#define SCREEN_HEIGHT = 360 * 2
-
 const f64 PI_by_180 = (PI / 180.0);
 const char *data_a_filename = "./input_data/data_100k_arcmin.txt";
 const char *data_b_filename = "./input_data/flat_100k_arcmin.txt";
 const char *redshift_data_filename = "./redshift_input_data/seyfert.dat";
 
-const unsigned long int MAX_DATA_POINTS = 100000UL;
-const unsigned long int MAX_REDSHIFT_DATA_POINTS = 100000UL; // @Note(Victor): This is set when we read the redshift data
+const ul MAX_DATA_POINTS = 100000UL;
+const ul MAX_REDSHIFT_DATA_POINTS = 100000UL; // @Note(Victor): This is set when we read the redshift data
 
 // Assuming speed of light in km/s for converting redshift to distance (simplified calculation)
 const f64 speed_of_light_kmh = 299792.458; // Speed of light in km/s
@@ -99,6 +96,37 @@ internal void rotate_camera_around_origo(app_state_t *app_state, f64 dt);
 internal void handle_window_resize(app_state_t *app_state);
 internal void parse_input_args(app_state_t *app_state, i32 argc, char **argv);
 internal f64 redshift_to_distance(f64 redshift);
+
+i32 main(i32 argc, char **argv)
+{
+    app_state_t *app_state = (app_state_t *)calloc(1, sizeof(app_state_t));
+    if (app_state == NULL)
+    {
+        printf("Error allocating memory for app_state!\n");
+        return (1);
+    }
+
+    parse_input_args(app_state, argc, argv);
+
+    i32 app_init_result = app_init(app_state);
+    if (app_init_result != 0)
+    {
+        fprintf(stderr, "ERROR: app_init failed.\n");
+        return (1);
+    }
+
+    // Main loop
+    while (!WindowShouldClose())
+    {
+        f64 dt = GetFrameTime();
+        app_update(app_state, dt);
+        app_render(app_state, dt);
+    }
+
+    app_cleanup(app_state);
+
+    return (0);
+}
 
 // Redshift data calculations
 // ----------------------------------------------------------------------------------
@@ -365,12 +393,12 @@ app_update(app_state_t *app_state, f64 dt)
 
     rotate_camera_around_origo(app_state, dt);
 
-    f64 Scroll = GetMouseWheelMove();
-    if (Scroll != 0.0f)
+    f64 scroll = GetMouseWheelMove();
+    if (scroll != 0.0f)
     {
-        const f64 ZoomChange = -2.5f;
-        f64 Speed = ZoomChange;
-        app_state->zoom = Clamp(app_state->zoom + Scroll * Speed * dt, 0.0f, 10.0f);
+        const f64 zoom_change = -2.5f;
+        f64 Speed = zoom_change;
+        app_state->zoom = Clamp(app_state->zoom + scroll * Speed * dt, 0.0f, 10.0f);
     }
 }
 
@@ -450,8 +478,8 @@ app_render(app_state_t *app_state, f64 dt)
 
     if (!app_state->is_paused)
     {
-        // Scroll to zoom
-        DrawTextEx(app_state->main_font, TextFormat("Scroll to zoom: %.2f", app_state->zoom), (Vector2){10, 50}, 16, 2, WHITE);
+        // scroll to zoom
+        DrawTextEx(app_state->main_font, TextFormat("scroll to zoom: %.2f", app_state->zoom), (Vector2){10, 50}, 16, 2, WHITE);
     }
 
     // Press F11 to toggle fullscreen
@@ -478,13 +506,13 @@ app_render(app_state_t *app_state, f64 dt)
     if (app_state->is_paused)
     {
         const f64 TextWidth = MeasureText("Press Space again to go back to Auto Look", 16);
-        DrawTextEx(app_state->main_font, TextFormat("Press Space again to go back to Auto Look"), (Vector2){(float)(app_state->window_width / 2.0f - (float)TextWidth - 64.0f / 2.0f), (float)app_state->window_height - 30.0f}, 16, 2, PURPLE);
+        DrawTextEx(app_state->main_font, TextFormat("Press Space again to go back to Auto Look"), (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f}, 16, 2, PURPLE);
     }
     else
     {
         // Highlight the paused text
         const f64 TextWidth = MeasureText("Press Space to enter Free Look mode", 16);
-        DrawTextEx(app_state->main_font, "Press Space to enter Free Look mode", (Vector2){(float)(app_state->window_width / 2.0f - (float)TextWidth - 64.0f / 2.0f), (float)app_state->window_height - 30.0f}, 16, 2, GREEN);
+        DrawTextEx(app_state->main_font, "Press Space to enter Free Look mode", (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f}, 16, 2, GREEN);
     }
 
     if (app_state->is_paused)
@@ -504,8 +532,8 @@ app_render(app_state_t *app_state, f64 dt)
 internal void
 print_memory_usage(app_state_t *app_state)
 {
-    printf("\n\tMemory used in GigaBytes: %f\n", (f64)app_state->CPU_memory_allocated / (f64)Gigabytes(1));
-    printf("\tMemory used in MegaBytes: %f\n", (f64)app_state->CPU_memory_allocated / (f64)Megabytes(1));
+    printf("\n\tMemory used in GigaBytes: %f\n", (f64)app_state->cpu_memory_allocated / (f64)Gigabytes(1));
+    printf("\tMemory used in MegaBytes: %f\n", (f64)app_state->cpu_memory_allocated / (f64)Megabytes(1));
 }
 
 internal void
@@ -515,37 +543,37 @@ app_cleanup(app_state_t *app_state)
     printf("\n\tClosed window and OpenGL context\n");
 
     free(app_state->data_points_a);
-    app_state->CPU_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
+    app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
     printf("\n\tFreeing data_points_a %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data_t));
     print_memory_usage(app_state);
 
     free(app_state->data_points_b);
-    app_state->CPU_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
+    app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
     printf("\n\tFreeing data_points_b: %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data_t));
     print_memory_usage(app_state);
 
     free(app_state->matrix_transforms_a);
-    app_state->CPU_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
+    app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
     printf("\n\tFreeing matrix_transforms_a: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
     print_memory_usage(app_state);
 
     free(app_state->matrix_transforms_b);
-    app_state->CPU_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
+    app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
     printf("\n\tFreeing matrix_transforms_b: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
     print_memory_usage(app_state);
 
     free(app_state->redshift_data);
-    app_state->CPU_memory_allocated -= MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data_t);
+    app_state->cpu_memory_allocated -= MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data_t);
     printf("\n\tFreeing redshift_data: %lu\n", MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data_t));
     print_memory_usage(app_state);
 
     free(app_state->matrix_transforms_redshift);
-    app_state->CPU_memory_allocated -= MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
+    app_state->cpu_memory_allocated -= MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
     printf("\n\tFreeing matrix_transforms_redshift: %lu\n", MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix));
     print_memory_usage(app_state);
 
     // @Note(Victor): There should be no allocated memory left
-    Assert(app_state->CPU_memory_allocated == 0);
+    Assert(app_state->cpu_memory_allocated == 0);
 }
 
 internal bool
@@ -580,7 +608,7 @@ read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *data_poi
         }
     }
 
-    unsigned long int i = 0;
+    ul i = 0;
     while (fgets(line, sizeof(line), f) != NULL && i < MAX_REDSHIFT_DATA_POINTS)
     {
         // Remove leading/trailing whitespace (if any)
@@ -639,8 +667,8 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
     }
 
     // Read the header
-    char Line[1024];
-    if (fgets(Line, sizeof(Line), f) == NULL)
+    char line[1024];
+    if (fgets(line, sizeof(line), f) == NULL)
     {
         printf("Error reading header!\n");
         return (false);
@@ -648,14 +676,14 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
 
     // Read the data into the DataPointsLocation the data is in arcmin declination and right ascension \t separated
     i32 i = 0;
-    while (fgets(Line, sizeof(Line), f) != NULL)
+    while (fgets(line, sizeof(line), f) != NULL)
     {
         // printf("Retrieved line of length %zu:\n", Read);
-        // printf("%s", Line);
+        // printf("%s", line);
 
         // @Note(Victor): We expect the input data to be separated by tabs !!!
         // Parse the line
-        char *token = strtok(Line, "\t");
+        char *token = strtok(line, "\t");
         i32 j = 0;
         while (token != NULL)
         {
@@ -688,7 +716,7 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
 internal i32
 app_init(app_state_t *app_state)
 {
-    app_state->CPU_memory_allocated = 0L;
+    app_state->cpu_memory_allocated = 0L;
     app_state->debug = false;
     app_state->data_is_loaded = false;
     app_state->is_paused = false;
@@ -757,7 +785,7 @@ app_init(app_state_t *app_state)
     Matrix earch_scale_matrix = MatrixScale(0.01f, 0.01f, 0.01f);
     app_state->earth_model.transform = MatrixMultiply(app_state->earth_model.transform, earch_scale_matrix);
 
-    return 0;
+    return (0);
 }
 
 internal i32
@@ -770,7 +798,7 @@ app_read_input_data(app_state_t *app_state)
         free(app_state);
         return (1);
     }
-    app_state->CPU_memory_allocated += MAX_DATA_POINTS * sizeof(arcmin_data_t);
+    app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(arcmin_data_t);
 
     app_state->data_points_b = (arcmin_data_t *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data_t));
     if (app_state->data_points_b == NULL)
@@ -780,7 +808,7 @@ app_read_input_data(app_state_t *app_state)
         free(app_state);
         return (1);
     }
-    app_state->CPU_memory_allocated += MAX_DATA_POINTS * sizeof(arcmin_data_t);
+    app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(arcmin_data_t);
 
     app_state->redshift_data = (arcmin_data_t *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(arcmin_data_t));
 
@@ -809,7 +837,7 @@ app_read_input_data(app_state_t *app_state)
     if (read_input_data_from_redshift_file(redshift_data_filename, app_state->redshift_data)) // or another appropriate data structure
     {
         printf("\tSuccessfully loaded redshift data from %s\n", redshift_data_filename);
-        app_state->CPU_memory_allocated += MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data_t);
+        app_state->cpu_memory_allocated += MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data_t);
     }
     else
     {
@@ -819,8 +847,8 @@ app_read_input_data(app_state_t *app_state)
     }
 
     // Assert that all the input data was read ----------------------------------------
-    unsigned long int data_count_read = 0;
-    for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
+    ul data_count_read = 0;
+    for (ul i = 0; i < MAX_DATA_POINTS; ++i)
     {
         if (app_state->data_points_a[i].right_ascension != 0.0f)
         {
@@ -832,7 +860,7 @@ app_read_input_data(app_state_t *app_state)
     Assert(app_state->data_points_b != NULL);
 
     data_count_read = 0;
-    for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
+    for (ul i = 0; i < MAX_DATA_POINTS; ++i)
     {
         if (app_state->data_points_b[i].right_ascension != 0.0f)
         {
@@ -850,7 +878,7 @@ app_read_input_data(app_state_t *app_state)
 internal i32
 initialize_transforms_course_data(app_state_t *app_state)
 {
-    for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
+    for (ul i = 0; i < MAX_DATA_POINTS; ++i)
     {
         // data_points_a real galaxies
         {
@@ -888,7 +916,7 @@ initialize_transforms_course_data(app_state_t *app_state)
         }
     }
 
-    return 0;
+    return (0);
 }
 
 internal i32
@@ -901,7 +929,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
         fprintf(stderr, "ERROR: Could not allocate matrix_transforms_a.\n");
         return (1);
     }
-    app_state->CPU_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
+    app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
 
     app_state->matrix_transforms_b = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
     if (app_state->matrix_transforms_b == NULL)
@@ -909,7 +937,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
         fprintf(stderr, "ERROR: Could not allocate matrix_transforms_b.\n");
         return (1);
     }
-    app_state->CPU_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
+    app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
 
     app_state->matrix_transforms_redshift = (Matrix *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(Matrix));
     if (app_state->matrix_transforms_redshift == NULL)
@@ -917,7 +945,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
         fprintf(stderr, "ERROR: Could not allocate matrix_transforms_redshift.\n");
         return (1);
     }
-    app_state->CPU_memory_allocated += MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
+    app_state->cpu_memory_allocated += MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
 
     i32 course_data_init_result = initialize_transforms_course_data(app_state);
     if (course_data_init_result != 0)
@@ -929,7 +957,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     // Redshift data points with distance from the earth
     // Redshift can be mapped to a distance value in megaparsecs (Mpc) or another suitable unit for distance.
     // Assuming Redshift has already been scaled to represent the distance directly, we use it as the radius.
-    for (unsigned long int i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
+    for (ul i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
     {
         // Convert RA and DEC to radians
         f64 right_ascension_rad = (app_state->redshift_data[i].right_ascension / 60.0f) * PI_by_180;
@@ -953,7 +981,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
         app_state->matrix_transforms_redshift[i] = MatrixMultiply(app_state->matrix_transforms_redshift[i], MatrixTranslate(X, Y, Z));
     }
 
-    return 0;
+    return (0);
 }
 
 internal i32
@@ -1001,7 +1029,7 @@ app_init_shaders(app_state_t *app_state)
         galaxy_material.maps[MATERIAL_MAP_SPECULAR].value = 1.0f;
 
         // Set the shininess for specular reflections
-        float shininess = 32.0f;
+        f32 shininess = 32.0f;
         SetShaderValue(galaxy_material.shader, GetShaderLocation(galaxy_material.shader, "shininess"), &shininess, SHADER_UNIFORM_FLOAT);
 
         app_state->material_instance = galaxy_material;
@@ -1009,7 +1037,7 @@ app_init_shaders(app_state_t *app_state)
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     }
 
-    return 0;
+    return (0);
 }
 
 internal i32
@@ -1019,37 +1047,6 @@ app_platform_init(app_state_t *app_state)
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
     SetTargetFPS(60);
-
-    return 0;
-}
-
-i32 main(i32 argc, char **argv)
-{
-    app_state_t *app_state = (app_state_t *)calloc(1, sizeof(app_state_t));
-    if (app_state == NULL)
-    {
-        printf("Error allocating memory for app_state!\n");
-        return (1);
-    }
-
-    parse_input_args(app_state, argc, argv);
-
-    i32 app_init_result = app_init(app_state);
-    if (app_init_result != 0)
-    {
-        fprintf(stderr, "ERROR: app_init failed.\n");
-        return (1);
-    }
-
-    // Main loop
-    while (!WindowShouldClose())
-    {
-        f64 dt = GetFrameTime();
-        app_update(app_state, dt);
-        app_render(app_state, dt);
-    }
-
-    app_cleanup(app_state);
 
     return (0);
 }
