@@ -21,7 +21,7 @@ This program is a visualization of the data, not the solution to the assignment.
 
 ## Prerequisites
 
-This project can be built using plain g++ through build.sh (raylib is the only dependency), Meson, CMake, or Make. 
+This project can be built using plain clang through build.sh (raylib is the only dependency) or Meson.
 
 Below are the installation instructions for the required dependencies:
 
@@ -52,7 +52,6 @@ sudo apt-get install -y raylib build-essential meson git clang
 
 You can choose from one of the following build systems:
 - Meson (F5 in VSCode)
-- Make with CMake
 - build.sh
 
 
