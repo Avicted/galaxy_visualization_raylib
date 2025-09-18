@@ -6,14 +6,14 @@
 #include "raylib_includes.h"
 
 // Types -------------------------------------------------------------------------
-struct ArcminData
+typedef struct
 {
-    f64 right_ascension = 0.0f;
-    f64 declination = 0.0f;
-    f64 redshift = 0.0f;
-};
+    f64 right_ascension;
+    f64 declination;
+    f64 redshift;
+} arcmin_data;
 
-enum Draw_Data
+typedef enum
 {
     // Draw the data from the files from the ÅA course
     DRAW_DATA_A,
@@ -22,7 +22,7 @@ enum Draw_Data
 
     // Draw the redshift data, not from the course
     DRAW_REDSHIFT_DATA,
-};
+} DRAW_DATA;
 
 // Variables ---------------------------------------------------------------------
 i32 SCREEN_WIDTH = 640 * 2;
@@ -34,7 +34,7 @@ bool IsPaused = false;
 
 u64 CPUMemory = 0L;
 
-constexpr f64 PIdividedBy180 = (PI / 180.0);
+const f64 PIdividedBy180 = (PI / 180.0);
 
 const char *DataAFilename = "./input_data/data_100k_arcmin.txt";
 const char *DataBFilename = "./input_data/flat_100k_arcmin.txt";
@@ -42,27 +42,27 @@ const char *RedshiftDataFilename = "./redshift_input_data/seyfert.dat";
 
 Font MainFont = {0};
 
-Camera3D MainCamera = {};
+Camera3D MainCamera = {0};
 f64 Zoom = 1.0f * PI;
 
 const unsigned long int MAX_DATA_POINTS = 100000UL;
 unsigned long int MAX_REDSHIFT_DATA_POINTS = 100000UL; // @Note(Victor): This is set when we read the redshift data
 
 // @Note(Victor): Data from the course, only celestial coordinates, no redshift (distance)
-ArcminData *DataPointsA = nullptr;
-ArcminData *DataPointsB = nullptr;
+arcmin_data *DataPointsA = NULL;
+arcmin_data *DataPointsB = NULL;
 
 // @Note(Victor): Data from the redshift file with the appriximated distances to the galaxies
-ArcminData *RedshiftData = nullptr;
+arcmin_data *RedshiftData = NULL;
 
 // Batch rendering in Raylib with a custom shader
-Matrix *MatrixTransformsA = nullptr;
-Matrix *MatrixTransformsB = nullptr;
-Matrix *MatrixTransformsRedshift = nullptr;
+Matrix *MatrixTransformsA = NULL;
+Matrix *MatrixTransformsB = NULL;
+Matrix *MatrixTransformsRedshift = NULL;
 
 Shader CustomShader = {0};
 
-Draw_Data DataToDraw = DRAW_ALL_DATA;
+DRAW_DATA DataToDraw = DRAW_ALL_DATA;
 
 // Define mesh to be instanced
 Material matInstances;
@@ -74,29 +74,29 @@ Model EarthModel;
 // Redshift data calculations
 // ----------------------------------------------------------------------------------
 // Function to convert RA from HHMMSS to degrees
-internal f64
-ConvertRaToDegrees(f64 raHHMMSS)
-{
-    int hours = (int)(raHHMMSS / 10000);
-    int minutes = (int)((raHHMMSS - (hours * 10000)) / 100);
-    f64 seconds = raHHMMSS - (hours * 10000) - (minutes * 100);
-
-    return 15.0 * (hours + (minutes / 60.0) + (seconds / 3600.0)); // 1 hour = 15 degrees
-}
+// internal f64
+// ConvertRaToDegrees(f64 raHHMMSS)
+// {
+//     int hours = (int)(raHHMMSS / 10000);
+//     int minutes = (int)((raHHMMSS - (hours * 10000)) / 100);
+//     f64 seconds = raHHMMSS - (hours * 10000) - (minutes * 100);
+//
+//     return 15.0 * (hours + (minutes / 60.0) + (seconds / 3600.0)); // 1 hour = 15 degrees
+// }
 
 // Function to convert DEC from DDMMSS to degrees
 // DEC: Declination
 // DDMMSS: Degrees, minutes, seconds
-internal f64
-ConvertDecToDegrees(f64 decDDMMSS)
-{
-    int degrees = (int)(decDDMMSS / 10000);
-    int minutes = (int)((decDDMMSS - (degrees * 10000)) / 100);
-    f64 seconds = decDDMMSS - (degrees * 10000) - (minutes * 100);
-
-    f64 decDegrees = abs(degrees) + (minutes / 60.0) + (seconds / 3600.0);
-    return (degrees < 0) ? -decDegrees : decDegrees;
-}
+// internal f64
+// ConvertDecToDegrees(f64 decDDMMSS)
+// {
+//     int degrees = (int)(decDDMMSS / 10000);
+//     int minutes = (int)((decDDMMSS - (degrees * 10000)) / 100);
+//     f64 seconds = decDDMMSS - (degrees * 10000) - (minutes * 100);
+//
+//     f64 decDegrees = abs(degrees) + (minutes / 60.0) + (seconds / 3600.0);
+//     return (degrees < 0) ? -decDegrees : decDegrees;
+// }
 
 // Assuming speed of light in km/s for converting redshift to distance (simplified calculation)
 const f64 speedOfLight = 299792.458; // Speed of light in km/s
@@ -110,20 +110,20 @@ RedshiftToDistance(f64 redshift)
 }
 
 // Convert spherical coordinates (RA, Dec, distance) to Cartesian (X, Y, Z)
-internal void
-CalculatePosition(f64 ra, f64 dec, f64 redshift, f64 &X, f64 &Y, f64 &Z)
-{
-    f64 distance = RedshiftToDistance(redshift); // Convert redshift to distance (Mpc)
-
-    // Convert degrees to radians
-    f64 raRad = ra * PIdividedBy180;
-    f64 decRad = dec * PIdividedBy180;
-
-    // Calculate Cartesian coordinates
-    X = distance * cos(decRad) * cos(raRad);
-    Y = distance * cos(decRad) * sin(raRad);
-    Z = distance * sin(decRad);
-}
+// internal void
+// CalculatePosition(f64 ra, f64 dec, f64 redshift, f64 *X, f64 *Y, f64 *Z)
+// {
+//     f64 distance = RedshiftToDistance(redshift); // Convert redshift to distance (Mpc)
+//
+//     // Convert degrees to radians
+//     f64 raRad = ra * PIdividedBy180;
+//     f64 decRad = dec * PIdividedBy180;
+//
+//     // Calculate Cartesian coordinates
+//     *X = distance * cos(decRad) * cos(raRad);
+//     *Y = distance * cos(decRad) * sin(raRad);
+//     *Z = distance * sin(decRad);
+// }
 // ----------------------------------------------------------------------------------
 
 internal void
@@ -197,8 +197,8 @@ RotateCameraAroundOrigo(f64 DeltaTime)
     direction.z = cosf(DEG2RAD * Pitch) * sinf(DEG2RAD * Yaw);
     direction = Vector3Normalize(direction);
 
-    local_persist Vector3 right = Vector3Normalize(Vector3CrossProduct(direction, Cam->up));
-    local_persist Vector3 up = Vector3Normalize(Vector3CrossProduct(right, direction));
+    Vector3 right = Vector3Normalize(Vector3CrossProduct(direction, Cam->up));
+    Vector3 up = Vector3Normalize(Vector3CrossProduct(right, direction));
 
     if (IsPaused)
     {
@@ -209,9 +209,9 @@ RotateCameraAroundOrigo(f64 DeltaTime)
             CursorEnabled = false;
 
             // Set the camera to look at the data from the earths position, roughly
-            Cam->position = {4.911170f, -4.564987f, 11.718232f};
-            Cam->target = {5.357430f, -3.781510f, 12.150687f};
-            direction = {-0.446259f, -0.783477f, -0.432455f};
+            Cam->position = (Vector3){4.911170f, -4.564987f, 11.718232f};
+            Cam->target = (Vector3){5.357430f, -3.781510f, 12.150687f};
+            direction = (Vector3){-0.446259f, -0.783477f, -0.432455f};
             Yaw = -136.600;
             Pitch = -51.580;
         }
@@ -351,6 +351,8 @@ GameUpdate(f64 DeltaTime)
 internal void
 GameRender(f64 DeltaTime)
 {
+    (void)DeltaTime;
+
     BeginDrawing();
     ClearBackground(BLACK);
 
@@ -386,7 +388,7 @@ GameRender(f64 DeltaTime)
         rlLoadIdentity();
     } */
 
-    DrawSphere({0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
+    DrawSphere((Vector3){0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
 
     // Draw the Earth model at the origin (0, 0, 0)
     Vector3 EarthPosition = {0.0f, 0.0f, 0.0f};
@@ -418,57 +420,57 @@ GameRender(f64 DeltaTime)
     // UI ------------------------------------------------------
 
     // Draw the FPS with our font
-    DrawTextEx(MainFont, TextFormat("FPS: %i", GetFPS()), {10, 10}, 20, 2, WHITE);
+    DrawTextEx(MainFont, TextFormat("FPS: %i", GetFPS()), (Vector2){10, 10}, 20, 2, WHITE);
 
     if (!IsPaused)
     {
         // Scroll to zoom
-        DrawTextEx(MainFont, TextFormat("Scroll to zoom: %.2f", Zoom), {10, 50}, 16, 2, WHITE);
+        DrawTextEx(MainFont, TextFormat("Scroll to zoom: %.2f", Zoom), (Vector2){10, 50}, 16, 2, WHITE);
     }
 
     // Press F11 to toggle fullscreen
-    DrawTextEx(MainFont, TextFormat("Press F11 to toggle fullscreen"), {10, 70}, 16, 2, WHITE);
+    DrawTextEx(MainFont, TextFormat("Press F11 to toggle fullscreen"), (Vector2){10, 70}, 16, 2, WHITE);
 
     // Press 1, 2 or 3 to toggle which data to draw
-    DrawTextEx(MainFont, TextFormat("Press 1, 2, 3 or 4 to toggle which data to draw"), {10, 90}, 16, 2, WHITE);
+    DrawTextEx(MainFont, TextFormat("Press 1, 2, 3 or 4 to toggle which data to draw"), (Vector2){10, 90}, 16, 2, WHITE);
 
     // Red are uniformly distributed, blue are real data
-    DrawTextEx(MainFont, TextFormat("Red are uniformly distributed"), {10, 110}, 16, 2, RED);
-    DrawTextEx(MainFont, TextFormat("Blue are real data"), {10, 130}, 16, 2, BLUE);
+    DrawTextEx(MainFont, TextFormat("Red are uniformly distributed"), (Vector2){10, 110}, 16, 2, RED);
+    DrawTextEx(MainFont, TextFormat("Blue are real data"), (Vector2){10, 130}, 16, 2, BLUE);
 
     // @Note(Victor): This is not working as intended
     // DrawTextEx(MainFont, TextFormat("Magenta are redshift data"), {10, 160}, 16, 2, MAGENTA);
 
     if (IsPaused)
     {
-        DrawTextEx(MainFont, TextFormat("Press W, A, S, D, Q, E to move the camera + Mouse"), {10, 150}, 16, 2, WHITE);
-        DrawTextEx(MainFont, TextFormat("Press LShift to move slower"), {10, 170}, 16, 2, WHITE);
+        DrawTextEx(MainFont, TextFormat("Press W, A, S, D, Q, E to move the camera + Mouse"), (Vector2){10, 150}, 16, 2, WHITE);
+        DrawTextEx(MainFont, TextFormat("Press LShift to move slower"), (Vector2){10, 170}, 16, 2, WHITE);
     }
 
     // Press space to pause in the center bottom
     if (IsPaused)
     {
         const f64 TextWidth = MeasureText("Press Space again to go back to Auto Look", 16);
-        DrawTextEx(MainFont, TextFormat("Press Space again to go back to Auto Look"), {(float)(SCREEN_WIDTH / 2.0f - (float)TextWidth - 64.0f / 2.0f), (float)SCREEN_HEIGHT - 30.0f}, 16, 2, PURPLE);
+        DrawTextEx(MainFont, TextFormat("Press Space again to go back to Auto Look"), (Vector2){(float)(SCREEN_WIDTH / 2.0f - (float)TextWidth - 64.0f / 2.0f), (float)SCREEN_HEIGHT - 30.0f}, 16, 2, PURPLE);
     }
     else
     {
         // Highlight the paused text
         const f64 TextWidth = MeasureText("Press Space to enter Free Look mode", 16);
-        DrawTextEx(MainFont, "Press Space to enter Free Look mode", {(float)(SCREEN_WIDTH / 2.0f - (float)TextWidth - 64.0f / 2.0f), (float)SCREEN_HEIGHT - 30.0f}, 16, 2, GREEN);
+        DrawTextEx(MainFont, "Press Space to enter Free Look mode", (Vector2){(float)(SCREEN_WIDTH / 2.0f - (float)TextWidth - 64.0f / 2.0f), (float)SCREEN_HEIGHT - 30.0f}, 16, 2, GREEN);
     }
 
     if (IsPaused)
     {
         const char *IsPausedText = "Free Look";
-        const int IsPausedTextLength = strlen(IsPausedText);
-        DrawTextEx(MainFont, IsPausedText, {SCREEN_WIDTH - 128.0f - 64.0f, 30}, 20, 2, PURPLE);
+        // const int IsPausedTextLength = strlen(IsPausedText);
+        DrawTextEx(MainFont, IsPausedText, (Vector2){SCREEN_WIDTH - 128.0f - 64.0f, 30}, 20, 2, PURPLE);
     }
     else
     {
         const char *IsPausedText = "Auto Look";
-        const int IsPausedTextLength = strlen(IsPausedText);
-        DrawTextEx(MainFont, IsPausedText, {SCREEN_WIDTH - 64.0f - 128.0f - 32.0f, 30}, 20, 2, GREEN);
+        // const int IsPausedTextLength = strlen(IsPausedText);
+        DrawTextEx(MainFont, IsPausedText, (Vector2){SCREEN_WIDTH - 64.0f - 128.0f - 32.0f, 30}, 20, 2, GREEN);
     }
 
     EndDrawing();
@@ -488,13 +490,13 @@ CleanupOurStuff(void)
     printf("\n\tClosed window and OpenGL context\n");
 
     free(DataPointsA);
-    CPUMemory -= MAX_DATA_POINTS * sizeof(ArcminData);
-    printf("\n\tFreeing DataPointsA %lu\n", MAX_DATA_POINTS * sizeof(ArcminData));
+    CPUMemory -= MAX_DATA_POINTS * sizeof(arcmin_data);
+    printf("\n\tFreeing DataPointsA %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data));
     PrintMemoryUsage();
 
     free(DataPointsB);
-    CPUMemory -= MAX_DATA_POINTS * sizeof(ArcminData);
-    printf("\n\tFreeing DataPointsB: %lu\n", MAX_DATA_POINTS * sizeof(ArcminData));
+    CPUMemory -= MAX_DATA_POINTS * sizeof(arcmin_data);
+    printf("\n\tFreeing DataPointsB: %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data));
     PrintMemoryUsage();
 
     free(MatrixTransformsA);
@@ -508,8 +510,8 @@ CleanupOurStuff(void)
     PrintMemoryUsage();
 
     free(RedshiftData);
-    CPUMemory -= MAX_REDSHIFT_DATA_POINTS * sizeof(ArcminData);
-    printf("\n\tFreeing RedshiftData: %lu\n", MAX_REDSHIFT_DATA_POINTS * sizeof(ArcminData));
+    CPUMemory -= MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data);
+    printf("\n\tFreeing RedshiftData: %lu\n", MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data));
     PrintMemoryUsage();
 
     free(MatrixTransformsRedshift);
@@ -524,6 +526,8 @@ CleanupOurStuff(void)
 internal void
 SigIntHandler(i32 Signal)
 {
+    (void)Signal;
+
     printf("\tCaught SIGINT, exiting peacefully!\n");
 
     CleanupOurStuff();
@@ -532,7 +536,7 @@ SigIntHandler(i32 Signal)
 }
 
 internal bool
-ReadInputDataFromRedshiftFile(const char *FileName, ArcminData *DataPointsLocation)
+ReadInputDataFromRedshiftFile(const char *FileName, arcmin_data *DataPointsLocation)
 {
     // Data format:
     // Name: Galaxy name
@@ -612,7 +616,7 @@ ReadInputDataFromRedshiftFile(const char *FileName, ArcminData *DataPointsLocati
 }
 
 internal bool
-ReadInputDataFromFile(const char *FileName, ArcminData *DataPointsLocation)
+ReadInputDataFromFile(const char *FileName, arcmin_data *DataPointsLocation)
 {
     FILE *f = fopen(FileName, "r");
     if (f == NULL)
@@ -678,13 +682,13 @@ i32 main(i32 argc, char **argv)
     ParseInputArgs(argc, argv);
 
     // Allocate the memory for the data with calloc
-    DataPointsA = (ArcminData *)calloc(MAX_DATA_POINTS, sizeof(ArcminData));
-    CPUMemory += MAX_DATA_POINTS * sizeof(ArcminData);
+    DataPointsA = (arcmin_data *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data));
+    CPUMemory += MAX_DATA_POINTS * sizeof(arcmin_data);
 
-    DataPointsB = (ArcminData *)calloc(MAX_DATA_POINTS, sizeof(ArcminData));
-    CPUMemory += MAX_DATA_POINTS * sizeof(ArcminData);
+    DataPointsB = (arcmin_data *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data));
+    CPUMemory += MAX_DATA_POINTS * sizeof(arcmin_data);
 
-    RedshiftData = (ArcminData *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(ArcminData));
+    RedshiftData = (arcmin_data *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(arcmin_data));
 
     if (ReadInputDataFromFile(DataAFilename, DataPointsA))
     {
@@ -711,7 +715,7 @@ i32 main(i32 argc, char **argv)
     if (ReadInputDataFromRedshiftFile(RedshiftDataFilename, RedshiftData)) // or another appropriate data structure
     {
         printf("\tSuccessfully loaded redshift data from %s\n", RedshiftDataFilename);
-        CPUMemory += MAX_REDSHIFT_DATA_POINTS * sizeof(ArcminData);
+        CPUMemory += MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data);
     }
     else
     {
@@ -749,9 +753,9 @@ i32 main(i32 argc, char **argv)
 
     // Set the camera to rotate around the center of the data
     // MainCamera.position = {0.0f, 60.0f, 100.0f};
-    MainCamera.position = {0.0f, 0.0f, 0.0f};
-    MainCamera.target = {0.0f, 0.0f, 0.0f};
-    MainCamera.up = {0.0f, 1.0f, 0.0f};
+    MainCamera.position = (Vector3){0.0f, 0.0f, 0.0f};
+    MainCamera.target = (Vector3){0.0f, 0.0f, 0.0f};
+    MainCamera.up = (Vector3){0.0f, 1.0f, 0.0f};
     MainCamera.fovy = 65.0f; // Adjust if necessary
     MainCamera.projection = CAMERA_PERSPECTIVE;
 
@@ -766,7 +770,7 @@ i32 main(i32 argc, char **argv)
         MatrixTransformsRedshift = (Matrix *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(Matrix));
         CPUMemory += MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
 
-        Matrix rotation = MatrixRotateXYZ({0.0f, 0.0f, 0.0f});
+        // Matrix rotation = MatrixRotateXYZ((Vector3){0.0f, 0.0f, 0.0f});
 
         for (unsigned long int i = 0; i < MAX_DATA_POINTS; ++i)
         {
@@ -839,10 +843,6 @@ i32 main(i32 argc, char **argv)
         SetTraceLogLevel(LOG_WARNING);
         SetConfigFlags(FLAG_WINDOW_RESIZABLE);
         InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "galaxy_visuazation_raylib");
-
-#if defined(PLATFORM_WEB)
-        emscripten_set_main_loop(UpdateDrawFrame, 0, 1);
-#else
         SetTargetFPS(60);
     }
 
@@ -867,15 +867,15 @@ i32 main(i32 argc, char **argv)
         SetShaderValue(CustomShader, ColorDiffuseLoc, &DiffuseValue, SHADER_UNIFORM_VEC4);
 
         // Like the sun shining on the earth
-        CreateLight(LIGHT_DIRECTIONAL, {1000.0f, 1000.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
+        CreateLight(LIGHT_DIRECTIONAL, (Vector3){1000.0f, 1000.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
 
         // @Note(Victor): We can add more lights to the scene to better show the colors of the galaxies
-        CreateLight(LIGHT_DIRECTIONAL, {-1000.0f, -1000.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
-        CreateLight(LIGHT_DIRECTIONAL, {0.0f, 0.0f, 1000.0f}, Vector3Zero(), WHITE, CustomShader);
-        CreateLight(LIGHT_DIRECTIONAL, {0.0f, 0.0f, -1000.0f}, Vector3Zero(), WHITE, CustomShader);
+        CreateLight(LIGHT_DIRECTIONAL, (Vector3){-1000.0f, -1000.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
+        CreateLight(LIGHT_DIRECTIONAL, (Vector3){0.0f, 0.0f, 1000.0f}, Vector3Zero(), WHITE, CustomShader);
+        CreateLight(LIGHT_DIRECTIONAL, (Vector3){0.0f, 0.0f, -1000.0f}, Vector3Zero(), WHITE, CustomShader);
 
         // We can also add a point light at the center of the earth
-        CreateLight(LIGHT_POINT, {0.0f, 0.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
+        CreateLight(LIGHT_POINT, (Vector3){0.0f, 0.0f, 0.0f}, Vector3Zero(), WHITE, CustomShader);
     }
 
     // Material
@@ -917,8 +917,8 @@ i32 main(i32 argc, char **argv)
         GameUpdate(DeltaTime);
         GameRender(DeltaTime);
     }
-#endif
-        CleanupOurStuff();
 
-        return (0);
-    }
+    CleanupOurStuff();
+
+    return (0);
+}

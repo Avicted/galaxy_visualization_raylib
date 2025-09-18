@@ -1,12 +1,14 @@
-#pragma once
+#ifndef INCLUDES_H
+#define INCLUDES_H
 
 // Standard library
-#include <iostream>
+// #include <iostream>
 #include <signal.h>
-#include <string>
+// #include <string>
 #include <stdio.h>
-#include <stdint.h>
 #include <stdlib.h>
+#include <stddef.h>
+#include <stdint.h>
 
 // If Linux
 #ifdef __linux__
@@ -28,6 +30,8 @@ typedef uint8_t u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
+
+typedef unsigned long long ull;
 
 typedef int8_t i8;
 typedef int16_t i16;
@@ -54,3 +58,5 @@ typedef double f64;
 #define Kilobytes(Value) ((Value) * 1024LL)
 #define Megabytes(Value) (Kilobytes(Value) * 1024LL)
 #define Gigabytes(Value) (Megabytes(Value) * 1024LL)
+
+#endif // INCLUDES_H
