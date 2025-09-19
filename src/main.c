@@ -24,22 +24,17 @@ typedef enum
 
 typedef struct
 {
-    u64 cpu_memory_allocated;
-
-    arcmin_data_t arcmin_data;
-    draw_data_t draw_data;
-
     // @Note(Victor): Data from the course, only celestial coordinates, no redshift (distance)
     arcmin_data_t *data_points_a;
     arcmin_data_t *data_points_b;
+    draw_data_t data_to_draw;
 
+    u64 cpu_memory_allocated;
     bool debug;
     bool data_is_loaded;
     bool is_paused;
     bool cursor_enabled;
-
     Font main_font;
-
     i32 window_width;
     i32 window_height;
 
@@ -50,41 +45,37 @@ typedef struct
     Vector3 camera_direction;
 
     Shader custom_shader;
-
     Mesh sphere_mesh;
     Model earth_model;
 
-    // Batch rendering in Raylib with a custom shader
+    // Batch rendering
     Material material_instance;
     Matrix *matrix_transforms_a;
     Matrix *matrix_transforms_b;
-
-    draw_data_t data_to_draw;
-
 } app_state_t;
 
 // Constants ---------------------------------------------------------------------
-const ul MAX_DATA_POINTS = 100000UL;
-
-const char *data_a_filename = "./input_data/data_100k_arcmin.txt";
-const char *data_b_filename = "./input_data/flat_100k_arcmin.txt";
+global_variable const ul MAX_DATA_POINTS = 100000UL;
+global_variable const char *data_a_filename = "./input_data/data_100k_arcmin.txt";
+global_variable const char *data_b_filename = "./input_data/flat_100k_arcmin.txt";
 
 // Forward declarations ----------------------------------------------------------
-internal i32 app_platform_init(app_state_t *app_state);
+internal i32 app_init(app_state_t *app_state);
+internal i32 app_init_platform(app_state_t *app_state);
 internal i32 app_init_shaders(app_state_t *app_state);
 internal i32 app_read_input_data(app_state_t *app_state);
-internal i32 app_init(app_state_t *app_state);
-internal void app_render(app_state_t *app_state, f64 dt);
+internal void app_run(app_state_t *app_state);
 internal void app_update(app_state_t *app_state, f64 dt);
+internal void app_render(app_state_t *app_state, f64 dt);
 internal void app_cleanup(app_state_t *app_state);
 
+internal bool read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocation);
 internal i32 upload_matrix_transforms_to_gpu(app_state_t *app_state);
 internal i32 initialize_transforms_course_data(app_state_t *app_state);
-internal bool read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocation);
-internal void print_memory_usage(app_state_t *app_state);
-internal void rotate_camera_around_origo(app_state_t *app_state, f64 dt);
-internal void handle_window_resize(app_state_t *app_state);
 internal void parse_input_args(app_state_t *app_state, i32 argc, char **argv);
+internal inline void handle_window_resize(app_state_t *app_state);
+internal inline void rotate_camera_around_origo(app_state_t *app_state, f64 dt);
+internal void print_memory_usage(app_state_t *app_state);
 
 i32 main(i32 argc, char **argv)
 {
@@ -104,13 +95,7 @@ i32 main(i32 argc, char **argv)
         return (1);
     }
 
-    // Main loop
-    while (!WindowShouldClose())
-    {
-        f64 dt = GetFrameTime();
-        app_update(app_state, dt);
-        app_render(app_state, dt);
-    }
+    app_run(app_state);
 
     app_cleanup(app_state);
 
@@ -137,7 +122,7 @@ parse_input_args(app_state_t *app_state, i32 argc, char **argv)
     }
 }
 
-internal void
+internal inline void
 handle_window_resize(app_state_t *app_state)
 {
     if (IsWindowResized() && !IsWindowFullscreen())
@@ -169,7 +154,7 @@ handle_window_resize(app_state_t *app_state)
     }
 }
 
-internal void
+internal inline void
 rotate_camera_around_origo(app_state_t *app_state, f64 dt)
 {
     Camera3D *cam = &app_state->main_camera;
@@ -180,9 +165,8 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
     f64 *pitch = &app_state->camera_pitch;
     Vector3 *direction = &app_state->camera_direction;
 
-    local_persist bool prev_is_paused = false;
-
     // Detect transition into free look mode
+    local_persist bool prev_is_paused = false;
     bool entered_free_look = (app_state->is_paused && !prev_is_paused);
 
     if (app_state->is_paused)
@@ -277,6 +261,17 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
     }
 
     prev_is_paused = app_state->is_paused;
+}
+
+internal void
+app_run(app_state_t *app_state)
+{
+    while (!WindowShouldClose())
+    {
+        const f64 dt = GetFrameTime();
+        app_update(app_state, dt);
+        app_render(app_state, dt);
+    }
 }
 
 internal void
@@ -495,25 +490,42 @@ app_cleanup(app_state_t *app_state)
     CloseWindow();
     printf("\n\tClosed window and OpenGL context\n");
 
-    free(app_state->data_points_a);
-    app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
-    printf("\n\tFreeing data_points_a %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data_t));
-    print_memory_usage(app_state);
+    if (app_state->data_points_a != NULL)
+    {
+        free(app_state->data_points_a);
+        app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
+        printf("\n\tFreeing data_points_a %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data_t));
+        print_memory_usage(app_state);
+    }
 
-    free(app_state->data_points_b);
-    app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
-    printf("\n\tFreeing data_points_b: %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data_t));
-    print_memory_usage(app_state);
+    if (app_state->data_points_b != NULL)
+    {
+        free(app_state->data_points_b);
+        app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
+        printf("\n\tFreeing data_points_b: %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data_t));
+        print_memory_usage(app_state);
+    }
 
-    free(app_state->matrix_transforms_a);
-    app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
-    printf("\n\tFreeing matrix_transforms_a: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
-    print_memory_usage(app_state);
+    if (app_state->matrix_transforms_a)
+    {
+        free(app_state->matrix_transforms_a);
+        app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
+        printf("\n\tFreeing matrix_transforms_a: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
+        print_memory_usage(app_state);
+    }
 
-    free(app_state->matrix_transforms_b);
-    app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
-    printf("\n\tFreeing matrix_transforms_b: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
-    print_memory_usage(app_state);
+    if (app_state->matrix_transforms_b)
+    {
+        free(app_state->matrix_transforms_b);
+        app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
+        printf("\n\tFreeing matrix_transforms_b: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
+        print_memory_usage(app_state);
+    }
+
+    if (app_state != NULL)
+    {
+        free(app_state);
+    }
 
     // @Note(Victor): There should be no allocated memory left
     ASSERT(app_state->cpu_memory_allocated == 0);
@@ -623,7 +635,7 @@ app_init(app_state_t *app_state)
         return (1);
     }
 
-    i32 platform_init_result = app_platform_init(app_state);
+    i32 platform_init_result = app_init_platform(app_state);
     if (platform_init_result != 0)
     {
         fprintf(stderr, "ERROR: Could not initialize the platform API (Raylib)\n");
@@ -667,8 +679,7 @@ app_read_input_data(app_state_t *app_state)
     if (app_state->data_points_b == NULL)
     {
         printf("Error allocating memory for data_points_b!\n");
-        free(app_state->data_points_a);
-        free(app_state);
+        app_cleanup(app_state);
         return (1);
     }
     app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(arcmin_data_t);
@@ -770,7 +781,6 @@ initialize_transforms_course_data(app_state_t *app_state)
 internal i32
 upload_matrix_transforms_to_gpu(app_state_t *app_state)
 {
-
     app_state->matrix_transforms_a = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
     if (app_state->matrix_transforms_a == NULL)
     {
@@ -808,9 +818,9 @@ app_init_shaders(app_state_t *app_state)
     // Lighting
     {
         // Setting shader values
-        i32 ambient_loc = GetShaderLocation(app_state->custom_shader, "ambient");
+        i32 ambient_location = GetShaderLocation(app_state->custom_shader, "ambient");
         f64 ambient_value[4] = {1.0, 1.0, 1.0, 1.0};
-        SetShaderValue(app_state->custom_shader, ambient_loc, &ambient_value, SHADER_UNIFORM_VEC4);
+        SetShaderValue(app_state->custom_shader, ambient_location, &ambient_value, SHADER_UNIFORM_VEC4);
 
         i32 color_diffuse_loc = GetShaderLocation(app_state->custom_shader, "colorDiffuse");
         f64 diffuse_value[4] = {1.0, 1.0, 1.0, 1.0};
@@ -851,10 +861,10 @@ app_init_shaders(app_state_t *app_state)
 }
 
 internal i32
-app_platform_init(app_state_t *app_state)
+app_init_platform(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
 
