@@ -21,12 +21,12 @@ This project can be built using clang through build.sh (raylib is the only depen
 
 ## Dependencies
 
-- **Raylib** (Tested with v5.5-1)
-- **Base Development Tools** (e.g., `build-essential` on Ubuntu)
-- **Meson**
 - **Git**
-- **Clang** (or GCC)
-- **gdb** (optional)
+- **Base Development Tools** (e.g. `build-essential` on Ubuntu)
+- **Raylib** (Tested with v5.5-1)
+- **Clang**  (or GCC)
+- **Meson**  (optional)
+- **gdb**    (optional)
 
 ## Installation Commands
 
@@ -68,6 +68,7 @@ meson compile -C build --clean
 ```bash
 # Build
 chmod +x ./build.sh
+./build.sh
 
 # Run
 ./build/galaxy_visualization_raylib
