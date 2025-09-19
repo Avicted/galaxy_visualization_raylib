@@ -20,9 +20,6 @@ typedef enum
     DRAW_DATA_B,
     DRAW_DATA_ALL,
 
-    // Draw the redshift data, not from the course
-    DRAW_DATA_REDSHIFT,
-
     DRAW_DATA_COUNT
 } draw_data_t;
 
@@ -36,9 +33,6 @@ typedef struct
     // @Note(Victor): Data from the course, only celestial coordinates, no redshift (distance)
     arcmin_data_t *data_points_a;
     arcmin_data_t *data_points_b;
-
-    // @Note(Victor): Data from the redshift file with the appriximated distances to the galaxies
-    arcmin_data_t *redshift_data;
 
     bool debug;
     bool data_is_loaded;
@@ -65,23 +59,16 @@ typedef struct
     Material material_instance;
     Matrix *matrix_transforms_a;
     Matrix *matrix_transforms_b;
-    Matrix *matrix_transforms_redshift;
 
     draw_data_t data_to_draw;
 
 } app_state_t;
 
 // Constants ---------------------------------------------------------------------
+const ul MAX_DATA_POINTS = 100000UL;
+
 const char *data_a_filename = "./input_data/data_100k_arcmin.txt";
 const char *data_b_filename = "./input_data/flat_100k_arcmin.txt";
-const char *redshift_data_filename = "./redshift_input_data/seyfert.dat";
-
-const ul MAX_DATA_POINTS = 100000UL;
-const ul MAX_REDSHIFT_DATA_POINTS = 100000UL; // @Note(Victor): This is set when we read the redshift data
-
-// Assuming speed of light in km/s for converting redshift to distance (simplified calculation)
-const f64 speed_of_light_kmh = 299792.458; // Speed of light in km/s
-const f64 hubble_constant = 70.0;          // Hubble constant in km/s/Mpc
 
 // Forward declarations ----------------------------------------------------------
 internal i32 app_platform_init(app_state_t *app_state);
@@ -95,12 +82,10 @@ internal void app_cleanup(app_state_t *app_state);
 internal i32 upload_matrix_transforms_to_gpu(app_state_t *app_state);
 internal i32 initialize_transforms_course_data(app_state_t *app_state);
 internal bool read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocation);
-internal bool read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *DataPointsLocation);
 internal void print_memory_usage(app_state_t *app_state);
 internal void rotate_camera_around_origo(app_state_t *app_state, f64 dt);
 internal void handle_window_resize(app_state_t *app_state);
 internal void parse_input_args(app_state_t *app_state, i32 argc, char **argv);
-internal f64 redshift_to_distance(f64 redshift);
 
 i32 main(i32 argc, char **argv)
 {
@@ -132,57 +117,6 @@ i32 main(i32 argc, char **argv)
 
     return (0);
 }
-
-// Redshift data calculations
-// ----------------------------------------------------------------------------------
-// Function to convert RA from HHMMSS to degrees
-// internal f64
-// ConvertRaToDegrees(f64 raHHMMSS)
-// {
-//     int hours = (int)(raHHMMSS / 10000);
-//     int minutes = (int)((raHHMMSS - (hours * 10000)) / 100);
-//     f64 seconds = raHHMMSS - (hours * 10000) - (minutes * 100);
-//
-//     return 15.0 * (hours + (minutes / 60.0) + (seconds / 3600.0)); // 1 hour = 15 degrees
-// }
-
-// Function to convert DEC from DDMMSS to degrees
-// DEC: Declination
-// DDMMSS: Degrees, minutes, seconds
-// internal f64
-// ConvertDecToDegrees(f64 decDDMMSS)
-// {
-//     int degrees = (int)(decDDMMSS / 10000);
-//     int minutes = (int)((decDDMMSS - (degrees * 10000)) / 100);
-//     f64 seconds = decDDMMSS - (degrees * 10000) - (minutes * 100);
-//
-//     f64 decDegrees = abs(degrees) + (minutes / 60.0) + (seconds / 3600.0);
-//     return (degrees < 0) ? -decDegrees : decDegrees;
-// }
-
-internal f64
-redshift_to_distance(f64 redshift)
-{
-    // Distance in Megaparsecs (Mpc)
-    return (speed_of_light_kmh * redshift) / hubble_constant;
-}
-
-// Convert spherical coordinates (RA, Dec, distance) to Cartesian (X, Y, Z)
-// internal void
-// CalculatePosition(f64 ra, f64 dec, f64 redshift, f64 *X, f64 *Y, f64 *Z)
-// {
-//     f64 distance = redshift_to_distance(redshift); // Convert redshift to distance (Mpc)
-//
-//     // Convert degrees to radians
-//     f64 raRad = ra * DEG2RAD;
-//     f64 decRad = dec * DEG2RAD;
-//
-//     // Calculate Cartesian coordinates
-//     *X = distance * cos(decRad) * cos(raRad);
-//     *Y = distance * cos(decRad) * sin(raRad);
-//     *Z = distance * sin(decRad);
-// }
-// ----------------------------------------------------------------------------------
 
 internal void
 parse_input_args(app_state_t *app_state, i32 argc, char **argv)
@@ -344,12 +278,6 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
     }
 
     prev_is_paused = app_state->is_paused;
-
-    // printf("\tCamera Position: (%.3f, %.3f, %.3f)\n", cam->position.x, cam->position.y, cam->position.z);
-    // printf("\tCamera Target:   (%.3f, %.3f, %.3f)\n", cam->target.x, cam->target.y, cam->target.z);
-    // printf("\tCamera Direction:(%.3f, %.3f, %.3f)\n", direction->x, direction->y, direction->z);
-    // printf("\tCamera Yaw:      %.3f\n", *yaw);
-    // printf("\tCamera Pitch:    %.3f\n", *pitch);
 }
 
 internal void
@@ -376,12 +304,6 @@ app_update(app_state_t *app_state, f64 dt)
     {
         app_state->data_to_draw = DRAW_DATA_ALL;
     }
-
-    // @Note(Victor): This is not working as intended, yet
-    // if (IsKeyPressed(KEY_FOUR))
-    // {
-    //     data_to_draw = DRAW_DATA_REDSHIFT;
-    // }
 
     if (IsKeyPressed(KEY_SPACE))
     {
@@ -413,41 +335,14 @@ app_render(app_state_t *app_state, f64 dt)
         return;
     }
 
-    // Draw the data around a sphere in 3D
     BeginMode3D(app_state->main_camera);
-
-    /* {
-        // Override the projection matrix to set custom near/far planes
-        rlMatrixMode(RL_PROJECTION);
-        rlLoadIdentity();
-
-        // Set the correct aspect ratio
-        f64 aspect = (f64)GetScreenWidth() / (f64)GetScreenHeight();
-        f64 nearPlane = 0.1f;
-        f64 farPlane = 100000000000.0;
-
-        // Convert fovy from degrees to radians
-        f64 fovyRadians = main_camera.fovy * DEG2RAD;
-        f64 top = nearPlane * tan(fovyRadians / 2.0f);
-        f64 bottom = -top;
-        f64 right = top * aspect;
-        f64 left = -right;
-
-        // Set the frustum parameters correctly
-        rlFrustum(left, right, bottom, top, nearPlane, farPlane);
-
-        rlMatrixMode(RL_MODELVIEW);
-        rlLoadIdentity();
-    } */
 
     DrawSphere((Vector3){0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
 
-    // Draw the Earth model at the origin (0, 0, 0)
     Vector3 earth_pos = {0.0f, 0.0f, 0.0f};
     const f64 earth_scale = 1.0f;
     DrawModel(app_state->earth_model, earth_pos, earth_scale, WHITE);
 
-    // Draw instanced meshes
     if (app_state->data_to_draw == DRAW_DATA_A || app_state->data_to_draw == DRAW_DATA_ALL)
     {
         const Color DARK_BLUE = {0, 0, 255, 255};
@@ -459,12 +354,6 @@ app_render(app_state_t *app_state, f64 dt)
     {
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = RED;
         DrawMeshInstanced(app_state->sphere_mesh, app_state->material_instance, app_state->matrix_transforms_b, MAX_DATA_POINTS);
-    }
-
-    if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
-    {
-        app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = MAGENTA;
-        DrawMeshInstanced(app_state->sphere_mesh, app_state->material_instance, app_state->matrix_transforms_redshift, MAX_REDSHIFT_DATA_POINTS);
     }
 
     EndMode3D();
@@ -479,11 +368,8 @@ app_render(app_state_t *app_state, f64 dt)
 
     DrawTextEx(app_state->main_font, TextFormat("Press F11 to toggle fullscreen"), (Vector2){10, 70}, 16, 2, WHITE);
 
-    // @TODO(Victor): Disable all redshift data for now..
-    // Press 1, 2, 3 or 4 to toggle which data to draw
-    DrawTextEx(app_state->main_font, TextFormat("Press 1, 2, 3 or 4 to toggle which data to draw"), (Vector2){10, 90}, 16, 2, WHITE);
+    DrawTextEx(app_state->main_font, TextFormat("Press 1, 2, or 3 to toggle which data to draw"), (Vector2){10, 90}, 16, 2, WHITE);
 
-    // Red are uniformly distributed, blue are real data
     DrawTextEx(app_state->main_font, TextFormat("Red are uniformly distributed"), (Vector2){10, 110}, 16, 2, RED);
     DrawTextEx(app_state->main_font, TextFormat("Blue are real data"), (Vector2){10, 130}, 16, 2, BLUE);
 
@@ -551,98 +437,8 @@ app_cleanup(app_state_t *app_state)
     printf("\n\tFreeing matrix_transforms_b: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
     print_memory_usage(app_state);
 
-    free(app_state->redshift_data);
-    app_state->cpu_memory_allocated -= MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data_t);
-    printf("\n\tFreeing redshift_data: %lu\n", MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data_t));
-    print_memory_usage(app_state);
-
-    free(app_state->matrix_transforms_redshift);
-    app_state->cpu_memory_allocated -= MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
-    printf("\n\tFreeing matrix_transforms_redshift: %lu\n", MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix));
-    print_memory_usage(app_state);
-
     // @Note(Victor): There should be no allocated memory left
     Assert(app_state->cpu_memory_allocated == 0);
-}
-
-internal bool
-read_input_data_from_redshift_file(const char *FileName, arcmin_data_t *data_points_location)
-{
-    // Data format:
-    // Name: Galaxy name
-    // RA (1950): Right ascension (celestial longitude) in the 1950 epoch (format: HHMMSS.s)
-    // DEC: Declination (celestial latitude) in the 1950 epoch (format: DDMMSS)
-    // VH/VE/VS: Heliocentric velocity or redshift-related data.
-    // Other columns: Additional parameters like magnitude, velocity types, or uncertainties.
-
-    FILE *f = fopen(FileName, "r");
-    if (f == NULL)
-    {
-        printf("Error opening redshift file: %s\n", FileName);
-        return false;
-    }
-
-    const int buffer_size = 4096;
-    char line[buffer_size]; // Buffer to store each line from the file
-
-    // Skip the header lines (13 lines in this case)
-    const int header_lines = 13;
-    for (int i = 0; i < header_lines; ++i)
-    {
-        if (fgets(line, sizeof(line), f) == NULL)
-        {
-            printf("Error reading header!\n");
-            fclose(f);
-            return false;
-        }
-    }
-
-    ul i = 0;
-    while (fgets(line, sizeof(line), f) != NULL && i < MAX_REDSHIFT_DATA_POINTS)
-    {
-        // Remove leading/trailing whitespace (if any)
-        char *trimmed_line = strtok(line, "\n");
-
-        // Skip empty lines
-        if (trimmed_line == NULL || strlen(trimmed_line) == 0)
-            continue;
-
-        // Tokenize the line assuming space-separated values
-        char *token = strtok(trimmed_line, " ");
-        int j = 0;
-
-        while (token != NULL)
-        {
-            switch (j)
-            {
-            case 1: // RA (1950)
-                data_points_location[i].right_ascension = atof(token);
-                break;
-            case 2: // DEC
-                data_points_location[i].declination = atof(token);
-                break;
-            case 4: // Redshift (VH)
-                data_points_location[i].redshift = atof(token);
-                break;
-            default:
-                break;
-            }
-
-            token = strtok(NULL, " "); // Continue to the next token
-            j++;
-        }
-
-        i++;
-    }
-
-    if (f != NULL)
-    {
-        fclose(f);
-    }
-
-    printf("\tSuccessfully read %ld redshift data points from %s\n", i, FileName);
-
-    return true;
 }
 
 internal bool
@@ -667,9 +463,6 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
     i32 i = 0;
     while (fgets(line, sizeof(line), f) != NULL)
     {
-        // printf("Retrieved line of length %zu:\n", Read);
-        // printf("%s", line);
-
         // @Note(Victor): We expect the input data to be separated by tabs !!!
         // Parse the line
         char *token = strtok(line, "\t");
@@ -713,7 +506,6 @@ app_init(app_state_t *app_state)
 
     app_state->data_points_a = NULL;
     app_state->data_points_b = NULL;
-    app_state->redshift_data = NULL;
 
     app_state->main_camera = (Camera3D){0};
     app_state->main_camera.position = (Vector3){0.0f, 0.0f, 0.0f};
@@ -734,7 +526,6 @@ app_init(app_state_t *app_state)
 
     app_state->matrix_transforms_a = NULL;
     app_state->matrix_transforms_b = NULL;
-    app_state->matrix_transforms_redshift = NULL;
 
     app_state->data_to_draw = DRAW_DATA_ALL;
 
@@ -803,8 +594,6 @@ app_read_input_data(app_state_t *app_state)
     }
     app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(arcmin_data_t);
 
-    app_state->redshift_data = (arcmin_data_t *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(arcmin_data_t));
-
     if (read_input_data_from_file(data_a_filename, app_state->data_points_a))
     {
         printf("\tReadInputDataFromFile: %s succeeded!\n", data_a_filename);
@@ -825,18 +614,6 @@ app_read_input_data(app_state_t *app_state)
         printf("\tReadInputDataFromFile: %s failed!\n", data_b_filename);
         app_cleanup(app_state);
         return (1);
-    }
-
-    if (read_input_data_from_redshift_file(redshift_data_filename, app_state->redshift_data)) // or another appropriate data structure
-    {
-        printf("\tSuccessfully loaded redshift data from %s\n", redshift_data_filename);
-        app_state->cpu_memory_allocated += MAX_REDSHIFT_DATA_POINTS * sizeof(arcmin_data_t);
-    }
-    else
-    {
-        printf("Failed to load redshift data from %s\n", redshift_data_filename);
-        app_cleanup(app_state);
-        return 1;
     }
 
     // Assert that all the input data was read ----------------------------------------
@@ -932,46 +709,11 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     }
     app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
 
-    app_state->matrix_transforms_redshift = (Matrix *)calloc(MAX_REDSHIFT_DATA_POINTS, sizeof(Matrix));
-    if (app_state->matrix_transforms_redshift == NULL)
-    {
-        fprintf(stderr, "ERROR: Could not allocate matrix_transforms_redshift.\n");
-        return (1);
-    }
-    app_state->cpu_memory_allocated += MAX_REDSHIFT_DATA_POINTS * sizeof(Matrix);
-
     i32 course_data_init_result = initialize_transforms_course_data(app_state);
     if (course_data_init_result != 0)
     {
         fprintf(stderr, "ERROR: Could not initialize course data matrix transforms.\n");
         return (1);
-    }
-
-    // Redshift data points with distance from the earth
-    // Redshift can be mapped to a distance value in megaparsecs (Mpc) or another suitable unit for distance.
-    // Assuming Redshift has already been scaled to represent the distance directly, we use it as the radius.
-    for (ul i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
-    {
-        // Convert RA and DEC to radians
-        f64 right_ascension_rad = (app_state->redshift_data[i].right_ascension / 60.0f) * DEG2RAD;
-        f64 declination_rad = (app_state->redshift_data[i].declination / 60.0f) * DEG2RAD;
-
-        // Convert redshift to distance in Megaparsecs
-        f64 distance_mpc = redshift_to_distance(app_state->redshift_data[i].redshift);
-
-        // Convert distance to some meaningful scale for your simulation
-        // For example, if you want to work in parsecs instead of megaparsecs:
-        f64 distance = distance_mpc * hubble_constant; // Convert Mpc to parsecs
-
-        // Calculate the position in 3D space using spherical to Cartesian conversion
-        f64 X = distance * cos(declination_rad) * cos(right_ascension_rad);
-        f64 Y = distance * cos(declination_rad) * sin(right_ascension_rad);
-        f64 Z = distance * sin(declination_rad);
-
-        // Apply this position to your model matrix (for example)
-        app_state->matrix_transforms_redshift[i] = MatrixIdentity();
-        app_state->matrix_transforms_redshift[i] = MatrixMultiply(app_state->matrix_transforms_redshift[i], MatrixScale(10000.0f, 10000.0f, 10000.0f));
-        app_state->matrix_transforms_redshift[i] = MatrixMultiply(app_state->matrix_transforms_redshift[i], MatrixTranslate(X, Y, Z));
     }
 
     return (0);
@@ -996,22 +738,20 @@ app_init_shaders(app_state_t *app_state)
         f64 diffuse_value[4] = {1.0, 1.0, 1.0, 1.0};
         SetShaderValue(app_state->custom_shader, color_diffuse_loc, &diffuse_value, SHADER_UNIFORM_VEC4);
 
-        // Like the sun shining on the earth
+        // The sun shining on the earth
         CreateLight(LIGHT_DIRECTIONAL, (Vector3){1000.0f, 1000.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
 
-        // @Note(Victor): We can add more lights to the scene to better show the colors of the galaxies
+        // @Note(Victor): We add more lights to the scene to better show the colors of the galaxies
         CreateLight(LIGHT_DIRECTIONAL, (Vector3){-1000.0f, -1000.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
         CreateLight(LIGHT_DIRECTIONAL, (Vector3){0.0f, 0.0f, 1000.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
         CreateLight(LIGHT_DIRECTIONAL, (Vector3){0.0f, 0.0f, -1000.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
 
-        // We can also add a point light at the center of the earth
+        // We also add a point light at the center of the earth
         CreateLight(LIGHT_POINT, (Vector3){0.0f, 0.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
     }
 
     // Material
     {
-        // NOTE: We are assigning the intancing shader to material.shader
-        // to be used on mesh drawing with DrawMeshInstanced()
         Material galaxy_material = LoadMaterialDefault();
         galaxy_material.shader = app_state->custom_shader;
 
@@ -1021,7 +761,6 @@ app_init_shaders(app_state_t *app_state)
         galaxy_material.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
         galaxy_material.maps[MATERIAL_MAP_SPECULAR].value = 1.0f;
 
-        // Set the shininess for specular reflections
         f32 shininess = 32.0f;
         SetShaderValue(galaxy_material.shader, GetShaderLocation(galaxy_material.shader, "shininess"), &shininess, SHADER_UNIFORM_FLOAT);
 
