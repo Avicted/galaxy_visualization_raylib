@@ -735,36 +735,36 @@ initialize_transforms_course_data(app_state_t *app_state)
         // data_points_a real galaxies
         {
             // Transform the arc minutes into radians that the trigonometric functions take as input. (sinf, cosf, tanf)
-            f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / 60.0f) * DEG2RAD;
-            f64 declination_rad = (app_state->data_points_a[i].declination / 60.0f) * DEG2RAD;
+            const f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / 60.0f) * DEG2RAD;
+            const f64 declination_rad = (app_state->data_points_a[i].declination / 60.0f) * DEG2RAD;
 
             // Calculate the position on the sphere using spherical coordinates
-            f64 radius = 50.0f;
-            f64 X = radius * cosf(right_ascension_rad) * cosf(declination_rad);
-            f64 Y = radius * sinf(declination_rad);
-            f64 Z = radius * sinf(right_ascension_rad) * cosf(declination_rad);
+            const f64 radius = 50.0f;
+            const f64 x = radius * cosf(right_ascension_rad) * cosf(declination_rad);
+            const f64 y = radius * sinf(declination_rad);
+            const f64 z = radius * sinf(right_ascension_rad) * cosf(declination_rad);
 
             // Create a model matrix for each data point to position it
             app_state->matrix_transforms_a[i] = MatrixIdentity();
             app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixScale(0.1f, 0.1f, 0.1f));
-            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate(X, Y, Z));
+            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate(x, y, z));
         }
 
         // data_points_b uniformly distributed (galaxies)
         {
-            f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / 60.0f) * DEG2RAD;
-            f64 declination_rad = (app_state->data_points_b[i].declination / 60.0f) * DEG2RAD;
+            const f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / 60.0f) * DEG2RAD;
+            const f64 declination_rad = (app_state->data_points_b[i].declination / 60.0f) * DEG2RAD;
 
             // Calculate the position on the sphere using spherical coordinates
-            f64 radius = 50.0f;
-            f64 X = radius * cosf(right_ascension_rad) * cosf(declination_rad);
-            f64 Y = radius * sinf(declination_rad);
-            f64 Z = radius * sinf(right_ascension_rad) * cosf(declination_rad);
+            const f64 radius = 50.0f;
+            const f64 x = radius * cosf(right_ascension_rad) * cosf(declination_rad);
+            const f64 y = radius * sinf(declination_rad);
+            const f64 z = radius * sinf(right_ascension_rad) * cosf(declination_rad);
 
             // Create a model matrix for each data point to position it
             app_state->matrix_transforms_b[i] = MatrixIdentity();
             app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixScale(0.1f, 0.1f, 0.1f));
-            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate(X, Y, Z));
+            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate(x, y, z));
         }
     }
 
