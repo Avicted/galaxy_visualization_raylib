@@ -327,17 +327,15 @@ app_render(app_state_t *app_state, f64 dt)
 {
     (void)dt;
 
-    BeginDrawing();
-    ClearBackground(BLACK);
-
     if (!app_state->data_is_loaded)
     {
         return;
     }
 
-    BeginMode3D(app_state->main_camera);
+    BeginDrawing();
+    ClearBackground(BLACK);
 
-    DrawSphere((Vector3){0.0f, 0.0f, 0.0f}, 1.0f, BLUE);
+    BeginMode3D(app_state->main_camera);
 
     Vector3 earth_pos = {0.0f, 0.0f, 0.0f};
     const f64 earth_scale = 1.0f;
