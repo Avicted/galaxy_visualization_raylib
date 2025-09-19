@@ -81,11 +81,11 @@ chmod +x ./build.sh
 
 ##  Demo
 
-![demo](resources/images/galaxy_demo.gif "galaxy_demo.gif")
+![demo](assets/images/galaxy_demo.gif "galaxy_demo.gif")
 
 ---
 
-![screen](resources/images/screenshot.png "screenshot.png")
+![screen](assets/images/screenshot.png "screenshot.png")
 
 ## Patch Notes
 - Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
