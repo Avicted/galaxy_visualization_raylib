@@ -89,7 +89,8 @@
         "valarray": "cpp",
         "time.h": "c",
         "stdlib.h": "c",
-        "signal.h": "c"
+        "signal.h": "c",
+        "string.h": "c"
     },
     "dotnet.defaultSolution": "disable",
     "C_Cpp.default.compilerPath": "/usr/bin/clang++",

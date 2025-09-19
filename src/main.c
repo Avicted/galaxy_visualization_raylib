@@ -2,7 +2,9 @@
 #define RLIGHTS_IMPLEMENTATION
 
 // Includes ----------------------------------------------------------------------
+#include "redefines.h"
 #include "includes.h"
+#include "macros.h"
 #include "raylib_includes.h"
 
 // Types -------------------------------------------------------------------------
@@ -10,17 +12,14 @@ typedef struct
 {
     f64 right_ascension;
     f64 declination;
-    f64 redshift;
 } arcmin_data_t;
 
 typedef enum
 {
-    // Draw the data from the files from the ÅA course
-    DRAW_DATA_A,
-    DRAW_DATA_B,
-    DRAW_DATA_ALL,
-
-    DRAW_DATA_COUNT
+    DRAW_DATA_A = 0,
+    DRAW_DATA_B = 1,
+    DRAW_DATA_ALL = 3,
+    DRAW_DATA_COUNT = 4
 } draw_data_t;
 
 typedef struct
@@ -517,14 +516,14 @@ app_cleanup(app_state_t *app_state)
     print_memory_usage(app_state);
 
     // @Note(Victor): There should be no allocated memory left
-    Assert(app_state->cpu_memory_allocated == 0);
+    ASSERT(app_state->cpu_memory_allocated == 0);
 }
 
 internal bool
 read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_location)
 {
-    FILE *f = fopen(file_name, "r");
-    if (f == NULL)
+    FILE *file = fopen(file_name, "r");
+    if (file == NULL)
     {
         printf("Error opening file!\n");
         return (false);
@@ -532,18 +531,16 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
 
     // Read the header
     char line[1024];
-    if (fgets(line, sizeof(line), f) == NULL)
+    if (fgets(line, sizeof(line), file) == NULL)
     {
         printf("Error reading header!\n");
         return (false);
     }
 
-    // Read the data into the DataPointsLocation the data is in arcmin declination and right ascension \t separated
     i32 i = 0;
-    while (fgets(line, sizeof(line), f) != NULL)
+    while (fgets(line, sizeof(line), file) != NULL)
     {
         // @Note(Victor): We expect the input data to be separated by tabs !!!
-        // Parse the line
         char *token = strtok(line, "\t");
         i32 j = 0;
         while (token != NULL)
@@ -569,7 +566,7 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
         i++;
     }
 
-    fclose(f);
+    fclose(file);
 
     return (true);
 }
@@ -577,36 +574,38 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
 internal i32
 app_init(app_state_t *app_state)
 {
-    app_state->cpu_memory_allocated = 0L;
-    app_state->debug = false;
-    app_state->data_is_loaded = false;
-    app_state->is_paused = false;
-    app_state->cursor_enabled = true;
+    *app_state = (app_state_t){
+        .cpu_memory_allocated = 0L,
+        .debug = false,
+        .data_is_loaded = false,
+        .is_paused = false,
+        .cursor_enabled = true,
 
-    app_state->data_points_a = NULL;
-    app_state->data_points_b = NULL;
+        .data_points_a = NULL,
+        .data_points_b = NULL,
 
-    app_state->main_camera = (Camera3D){0};
-    app_state->main_camera.position = (Vector3){0.0f, 0.0f, 0.0f};
-    app_state->main_camera.target = (Vector3){0.0f, 0.0f, 0.0f};
-    app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
-    app_state->main_camera.fovy = 65.0f;
-    app_state->main_camera.projection = CAMERA_PERSPECTIVE;
+        .main_camera = (Camera3D){
+            .position = (Vector3){0.0f, 0.0f, 0.0f},
+            .target = (Vector3){0.0f, 0.0f, 0.0f},
+            .up = (Vector3){0.0f, 1.0f, 0.0f},
+            .fovy = 65.0f,
+            .projection = CAMERA_PERSPECTIVE,
+        },
 
-    app_state->camera_zoom = 1.0f * PI;
-    app_state->camera_yaw = 45.80f;
-    app_state->camera_pitch = 42.12f;
-    app_state->camera_direction = (Vector3){0};
+        .camera_zoom = 1.0f * PI,
+        .camera_yaw = 45.80f,
+        .camera_pitch = 42.12f,
+        .camera_direction = (Vector3){0},
 
-    app_state->custom_shader = (Shader){0};
-    app_state->material_instance = (Material){0};
-    app_state->sphere_mesh = (Mesh){0};
-    app_state->earth_model = (Model){0};
+        .custom_shader = (Shader){0},
+        .material_instance = (Material){0},
+        .sphere_mesh = (Mesh){0},
+        .earth_model = (Model){0},
 
-    app_state->matrix_transforms_a = NULL;
-    app_state->matrix_transforms_b = NULL;
-
-    app_state->data_to_draw = DRAW_DATA_ALL;
+        .matrix_transforms_a = NULL,
+        .matrix_transforms_b = NULL,
+        .data_to_draw = DRAW_DATA_ALL,
+    };
 
     i32 app_read_input_data_result = app_read_input_data(app_state);
     if (app_read_input_data_result != 0)
@@ -631,7 +630,7 @@ app_init(app_state_t *app_state)
         return (1);
     }
 
-    app_state->main_font = LoadFontEx("./resources/fonts/retro-pixel-arcade.ttf", 128, 0, 250);
+    app_state->main_font = LoadFontEx("./assets/fonts/retro-pixel-arcade.ttf", 128, 0, 250);
 
     app_state->sphere_mesh = GenMeshSphere(0.2f, 4, 4);
 
@@ -645,7 +644,7 @@ app_init(app_state_t *app_state)
     printf("\n\tMemory usage before we start the main program loop\n");
     print_memory_usage(app_state);
 
-    app_state->earth_model = LoadModel("./resources/Earth_1_12756.glb");
+    app_state->earth_model = LoadModel("./assets/Earth_1_12756.glb");
     Matrix earch_scale_matrix = MatrixScale(0.01f, 0.01f, 0.01f);
     app_state->earth_model.transform = MatrixMultiply(app_state->earth_model.transform, earch_scale_matrix);
 
@@ -696,7 +695,6 @@ app_read_input_data(app_state_t *app_state)
         return (1);
     }
 
-    // Assert that all the input data was read ----------------------------------------
     ul data_count_read = 0;
     for (ul i = 0; i < MAX_DATA_POINTS; ++i)
     {
@@ -706,8 +704,8 @@ app_read_input_data(app_state_t *app_state)
         }
     }
 
-    Assert(data_count_read == MAX_DATA_POINTS);
-    Assert(app_state->data_points_b != NULL);
+    ASSERT(data_count_read == MAX_DATA_POINTS);
+    ASSERT(app_state->data_points_b != NULL);
 
     data_count_read = 0;
     for (ul i = 0; i < MAX_DATA_POINTS; ++i)
@@ -718,7 +716,7 @@ app_read_input_data(app_state_t *app_state)
         }
     }
 
-    Assert(data_count_read == MAX_DATA_POINTS);
+    ASSERT(data_count_read == MAX_DATA_POINTS);
 
     app_state->data_is_loaded = true;
 
@@ -835,8 +833,8 @@ app_init_shaders(app_state_t *app_state)
         Material galaxy_material = LoadMaterialDefault();
         galaxy_material.shader = app_state->custom_shader;
 
-        galaxy_material.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./resources/images/galaxy_test_texture_diffuse.png");
-        galaxy_material.maps[MATERIAL_MAP_SPECULAR].texture = LoadTexture("./resources/images/galaxy_test_texture_specular.png");
+        galaxy_material.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./assets/images/galaxy_test_texture_diffuse.png");
+        galaxy_material.maps[MATERIAL_MAP_SPECULAR].texture = LoadTexture("./assets/images/galaxy_test_texture_specular.png");
 
         galaxy_material.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
         galaxy_material.maps[MATERIAL_MAP_SPECULAR].value = 1.0f;
@@ -856,12 +854,11 @@ internal i32
 app_platform_init(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
 
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
 
-    SetTargetFPS(60);
-    SetWindowIcon(LoadImage("./resources/images/app_icon.png"));
+    SetWindowIcon(LoadImage("./assets/images/app_icon.png"));
 
     return (0);
 }
