@@ -43,13 +43,19 @@ typedef struct
     bool debug;
     bool data_is_loaded;
     bool is_paused;
+    bool cursor_enabled;
 
     Font main_font;
 
     i32 window_width;
     i32 window_height;
+
     Camera3D main_camera;
-    f64 zoom;
+    f64 camera_zoom;
+    f64 camera_yaw;
+    f64 camera_pitch;
+    Vector3 camera_direction;
+
     Shader custom_shader;
 
     Mesh sphere_mesh;
@@ -66,7 +72,6 @@ typedef struct
 } app_state_t;
 
 // Constants ---------------------------------------------------------------------
-const f64 PI_by_180 = (PI / 180.0);
 const char *data_a_filename = "./input_data/data_100k_arcmin.txt";
 const char *data_b_filename = "./input_data/flat_100k_arcmin.txt";
 const char *redshift_data_filename = "./redshift_input_data/seyfert.dat";
@@ -169,8 +174,8 @@ redshift_to_distance(f64 redshift)
 //     f64 distance = redshift_to_distance(redshift); // Convert redshift to distance (Mpc)
 //
 //     // Convert degrees to radians
-//     f64 raRad = ra * PI_by_180;
-//     f64 decRad = dec * PI_by_180;
+//     f64 raRad = ra * DEG2RAD;
+//     f64 decRad = dec * DEG2RAD;
 //
 //     // Calculate Cartesian coordinates
 //     *X = distance * cos(decRad) * cos(raRad);
@@ -208,7 +213,8 @@ handle_window_resize(app_state_t *app_state)
         app_state->window_height = GetScreenHeight();
     }
 
-    if (IsKeyPressed(KEY_ENTER) && (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)))
+    if ((IsKeyPressed(KEY_ENTER) && (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT))) ||
+        (IsKeyPressed(KEY_F11)))
     {
         i32 current_display = GetCurrentMonitor();
 
@@ -237,81 +243,76 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
     f64 speed = 10.0f * dt;
     f64 vertical_speed = 5.0f * dt;
 
-    local_persist f64 yaw = 45.80f;
-    local_persist f64 pitch = 42.12f;
-    local_persist bool cursor_enabled = false;
+    f64 *yaw = &app_state->camera_yaw;
+    f64 *pitch = &app_state->camera_pitch;
+    Vector3 *direction = &app_state->camera_direction;
 
-    local_persist Vector3 direction;
-    direction.x = cosf(DEG2RAD * pitch) * cosf(DEG2RAD * yaw);
-    direction.y = sinf(DEG2RAD * pitch);
-    direction.z = cosf(DEG2RAD * pitch) * sinf(DEG2RAD * yaw);
-    direction = Vector3Normalize(direction);
+    local_persist bool prev_is_paused = false;
 
-    Vector3 right = Vector3Normalize(Vector3CrossProduct(direction, cam->up));
-    Vector3 up = Vector3Normalize(Vector3CrossProduct(right, direction));
+    // Detect transition into free look mode
+    bool entered_free_look = (app_state->is_paused && !prev_is_paused);
 
     if (app_state->is_paused)
     {
-        // Disable the cursor to lock it to the center and hide it
-        if (cursor_enabled)
+        if (entered_free_look)
         {
-            DisableCursor();
-            cursor_enabled = false;
+            HideCursor();
+            app_state->cursor_enabled = false;
 
-            // Set the camera to look at the data from the earths position, roughly
-            cam->position = (Vector3){4.911170f, -4.564987f, 11.718232f};
-            cam->target = (Vector3){5.357430f, -3.781510f, 12.150687f};
-            direction = (Vector3){-0.446259f, -0.783477f, -0.432455f};
-            yaw = -136.600;
-            pitch = -51.580;
+            // Set the camera to look at the data from the earth's position
+            cam->position = (Vector3){13.632f, 1.377f, 9.318f};
+            cam->target = (Vector3){14.176f, 1.954f, 9.927f};
+            *direction = (Vector3){0.545f, 0.577f, 0.609f};
+            *yaw = 48.0f;
+            *pitch = 35.220f;
         }
 
-        // printf("\tFree Look mode\n");
-        // printf("\tposition: x=%f, y=%f, z=%f\n", Cam->position.x, Cam->position.y, Cam->position.z);
-        // printf("\ttarget: x=%f, y=%f, z=%f\n", Cam->target.x, Cam->target.y, Cam->target.z);
-        // printf("\tdirection: x=%f, y=%f, z=%f\n", direction.x, direction.y, direction.z);
-        // printf("\tYaw: %f\n", Yaw);
-        // printf("\tPitch: %f\n", Pitch);
+        const Vector2 mouse_delta = GetMouseDelta();
+        *yaw += mouse_delta.x * 0.1f;
+        *pitch -= mouse_delta.y * 0.1f;
 
-        Vector2 mouse_delta = GetMouseDelta();
-
-        // Update yaw and pitch based on mouse movement
-        yaw += mouse_delta.x * 0.1f;
-        pitch += mouse_delta.y * 0.1f;
+        const Vector2 mouse_pos = {GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f};
+        SetMousePosition(mouse_pos.x, mouse_pos.y);
 
         // Clamp pitch to avoid flipping the camera
-        if (pitch > 89.0f)
+        if (*pitch > 89.0f)
         {
-            pitch = 89.0f;
+            *pitch = 89.0f;
         }
-        if (pitch < -89.0f)
+        if (*pitch < -89.0f)
         {
-            pitch = -89.0f;
+            *pitch = -89.0f;
         }
 
-        // Go slower with LShift
+        direction->x = cosf(DEG2RAD * (*pitch)) * cosf(DEG2RAD * (*yaw));
+        direction->y = sinf(DEG2RAD * (*pitch));
+        direction->z = cosf(DEG2RAD * (*pitch)) * sinf(DEG2RAD * (*yaw));
+        *direction = Vector3Normalize(*direction);
+
+        const Vector3 right = Vector3Normalize(Vector3CrossProduct(*direction, cam->up));
+        const Vector3 up = Vector3Normalize(Vector3CrossProduct(right, *direction));
+
         if (IsKeyDown(KEY_LEFT_SHIFT))
         {
             speed *= 0.1f;
             vertical_speed *= 0.1f;
         }
 
-        // Move camera based on input
         if (IsKeyDown(KEY_W))
         {
-            cam->position = Vector3Subtract(cam->position, Vector3Scale(direction, speed));
+            cam->position = Vector3Add(cam->position, Vector3Scale(*direction, speed));
         }
         if (IsKeyDown(KEY_S))
         {
-            cam->position = Vector3Add(cam->position, Vector3Scale(direction, speed));
+            cam->position = Vector3Subtract(cam->position, Vector3Scale(*direction, speed));
         }
         if (IsKeyDown(KEY_D))
         {
-            cam->position = Vector3Subtract(cam->position, Vector3Scale(right, speed));
+            cam->position = Vector3Add(cam->position, Vector3Scale(right, speed));
         }
         if (IsKeyDown(KEY_A))
         {
-            cam->position = Vector3Add(cam->position, Vector3Scale(right, speed));
+            cam->position = Vector3Subtract(cam->position, Vector3Scale(right, speed));
         }
         if (IsKeyDown(KEY_Q))
         {
@@ -322,31 +323,33 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
             cam->position = Vector3Add(cam->position, Vector3Scale(up, vertical_speed));
         }
 
-        // Update camera target to reflect the new direction
-        cam->target = Vector3Subtract(cam->position, direction);
+        cam->target = Vector3Add(cam->position, *direction);
     }
     else
     {
-        // If not in free look mode, enable the cursor and restore the original camera logic
-        if (!cursor_enabled)
+        if (prev_is_paused)
         {
-            EnableCursor();
-            cursor_enabled = true;
+            ShowCursor();
+            app_state->cursor_enabled = true;
         }
 
         local_persist f64 previous_time_since_start = 0.0f;
         previous_time_since_start += dt * 0.2f;
 
-        cam->position.x = 25.0f * cosf(previous_time_since_start) * app_state->zoom;
+        cam->position.x = 25.0f * cosf(previous_time_since_start) * app_state->camera_zoom;
         cam->position.y = 50.0f;
-        cam->position.z = 25.0f * sinf(previous_time_since_start) * app_state->zoom;
+        cam->position.z = 25.0f * sinf(previous_time_since_start) * app_state->camera_zoom;
 
         cam->target = Vector3Zero();
     }
 
-    // printf("Direction: x=%f, y=%f, z=%f\n", direction.x, direction.y, direction.z);
-    // printf("Right:     x=%f, y=%f, z=%f\n", right.x, right.y, right.z);
-    // printf("Up:        x=%f, y=%f, z=%f\n", up.x, up.y, up.z);
+    prev_is_paused = app_state->is_paused;
+
+    // printf("\tCamera Position: (%.3f, %.3f, %.3f)\n", cam->position.x, cam->position.y, cam->position.z);
+    // printf("\tCamera Target:   (%.3f, %.3f, %.3f)\n", cam->target.x, cam->target.y, cam->target.z);
+    // printf("\tCamera Direction:(%.3f, %.3f, %.3f)\n", direction->x, direction->y, direction->z);
+    // printf("\tCamera Yaw:      %.3f\n", *yaw);
+    // printf("\tCamera Pitch:    %.3f\n", *pitch);
 }
 
 internal void
@@ -357,11 +360,6 @@ app_update(app_state_t *app_state, f64 dt)
     if (IsKeyPressed(KEY_ESCAPE))
     {
         CloseWindow();
-    }
-
-    if (IsKeyPressed(KEY_F11))
-    {
-        ToggleFullscreen();
     }
 
     if (IsKeyPressed(KEY_ONE))
@@ -398,7 +396,7 @@ app_update(app_state_t *app_state, f64 dt)
     {
         const f64 zoom_change = -2.5f;
         f64 Speed = zoom_change;
-        app_state->zoom = Clamp(app_state->zoom + scroll * Speed * dt, 0.0f, 10.0f);
+        app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * Speed * dt, 0.0f, 10.0f);
     }
 }
 
@@ -471,18 +469,14 @@ app_render(app_state_t *app_state, f64 dt)
 
     EndMode3D();
 
-    // UI ------------------------------------------------------
-
-    // Draw the FPS with our font
+    // UI -----------------------------------------------------------------------------
     DrawTextEx(app_state->main_font, TextFormat("FPS: %i", GetFPS()), (Vector2){10, 10}, 20, 2, WHITE);
 
     if (!app_state->is_paused)
     {
-        // scroll to zoom
-        DrawTextEx(app_state->main_font, TextFormat("scroll to zoom: %.2f", app_state->zoom), (Vector2){10, 50}, 16, 2, WHITE);
+        DrawTextEx(app_state->main_font, TextFormat("scroll to camera_zoom: %.2f", app_state->camera_zoom), (Vector2){10, 50}, 16, 2, WHITE);
     }
 
-    // Press F11 to toggle fullscreen
     DrawTextEx(app_state->main_font, TextFormat("Press F11 to toggle fullscreen"), (Vector2){10, 70}, 16, 2, WHITE);
 
     // @TODO(Victor): Disable all redshift data for now..
@@ -493,16 +487,12 @@ app_render(app_state_t *app_state, f64 dt)
     DrawTextEx(app_state->main_font, TextFormat("Red are uniformly distributed"), (Vector2){10, 110}, 16, 2, RED);
     DrawTextEx(app_state->main_font, TextFormat("Blue are real data"), (Vector2){10, 130}, 16, 2, BLUE);
 
-    // @Note(Victor): This is not working as intended
-    // DrawTextEx(main_font, TextFormat("Magenta are redshift data"), {10, 160}, 16, 2, MAGENTA);
-
     if (app_state->is_paused)
     {
         DrawTextEx(app_state->main_font, TextFormat("Press W, A, S, D, Q, E to move the camera + Mouse"), (Vector2){10, 150}, 16, 2, WHITE);
         DrawTextEx(app_state->main_font, TextFormat("Press LShift to move slower"), (Vector2){10, 170}, 16, 2, WHITE);
     }
 
-    // Press space to pause in the center bottom
     if (app_state->is_paused)
     {
         const f64 TextWidth = MeasureText("Press Space again to go back to Auto Look", 16);
@@ -510,7 +500,6 @@ app_render(app_state_t *app_state, f64 dt)
     }
     else
     {
-        // Highlight the paused text
         const f64 TextWidth = MeasureText("Press Space to enter Free Look mode", 16);
         DrawTextEx(app_state->main_font, "Press Space to enter Free Look mode", (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f}, 16, 2, GREEN);
     }
@@ -539,7 +528,7 @@ print_memory_usage(app_state_t *app_state)
 internal void
 app_cleanup(app_state_t *app_state)
 {
-    CloseWindow(); // Close window and OpenGL context
+    CloseWindow();
     printf("\n\tClosed window and OpenGL context\n");
 
     free(app_state->data_points_a);
@@ -720,6 +709,7 @@ app_init(app_state_t *app_state)
     app_state->debug = false;
     app_state->data_is_loaded = false;
     app_state->is_paused = false;
+    app_state->cursor_enabled = true;
 
     app_state->data_points_a = NULL;
     app_state->data_points_b = NULL;
@@ -732,9 +722,12 @@ app_init(app_state_t *app_state)
     app_state->main_camera.fovy = 65.0f;
     app_state->main_camera.projection = CAMERA_PERSPECTIVE;
 
-    app_state->zoom = 1.0f * PI;
-    app_state->custom_shader = (Shader){0};
+    app_state->camera_zoom = 1.0f * PI;
+    app_state->camera_yaw = 45.80f;
+    app_state->camera_pitch = 42.12f;
+    app_state->camera_direction = (Vector3){0};
 
+    app_state->custom_shader = (Shader){0};
     app_state->material_instance = (Material){0};
     app_state->sphere_mesh = (Mesh){0};
     app_state->earth_model = (Model){0};
@@ -883,8 +876,8 @@ initialize_transforms_course_data(app_state_t *app_state)
         // data_points_a real galaxies
         {
             // Transform the arc minutes into radians that the trigonometric functions take as input. (sinf, cosf, tanf)
-            f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / 60.0f) * PI_by_180;
-            f64 declination_rad = (app_state->data_points_a[i].declination / 60.0f) * PI_by_180;
+            f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / 60.0f) * DEG2RAD;
+            f64 declination_rad = (app_state->data_points_a[i].declination / 60.0f) * DEG2RAD;
 
             // Calculate the position on the sphere using spherical coordinates
             f64 radius = 50.0f;
@@ -900,8 +893,8 @@ initialize_transforms_course_data(app_state_t *app_state)
 
         // data_points_b uniformly distributed (galaxies)
         {
-            f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / 60.0f) * PI_by_180;
-            f64 declination_rad = (app_state->data_points_b[i].declination / 60.0f) * PI_by_180;
+            f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / 60.0f) * DEG2RAD;
+            f64 declination_rad = (app_state->data_points_b[i].declination / 60.0f) * DEG2RAD;
 
             // Calculate the position on the sphere using spherical coordinates
             f64 radius = 50.0f;
@@ -960,8 +953,8 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     for (ul i = 0; i < MAX_REDSHIFT_DATA_POINTS; ++i)
     {
         // Convert RA and DEC to radians
-        f64 right_ascension_rad = (app_state->redshift_data[i].right_ascension / 60.0f) * PI_by_180;
-        f64 declination_rad = (app_state->redshift_data[i].declination / 60.0f) * PI_by_180;
+        f64 right_ascension_rad = (app_state->redshift_data[i].right_ascension / 60.0f) * DEG2RAD;
+        f64 declination_rad = (app_state->redshift_data[i].declination / 60.0f) * DEG2RAD;
 
         // Convert redshift to distance in Megaparsecs
         f64 distance_mpc = redshift_to_distance(app_state->redshift_data[i].redshift);
