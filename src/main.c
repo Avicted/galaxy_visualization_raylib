@@ -213,7 +213,8 @@ handle_window_resize(app_state_t *app_state)
         app_state->window_height = GetScreenHeight();
     }
 
-    if (IsKeyPressed(KEY_ENTER) && (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT)))
+    if ((IsKeyPressed(KEY_ENTER) && (IsKeyDown(KEY_LEFT_ALT) || IsKeyDown(KEY_RIGHT_ALT))) ||
+        (IsKeyPressed(KEY_F11)))
     {
         i32 current_display = GetCurrentMonitor();
 
@@ -359,11 +360,6 @@ app_update(app_state_t *app_state, f64 dt)
     if (IsKeyPressed(KEY_ESCAPE))
     {
         CloseWindow();
-    }
-
-    if (IsKeyPressed(KEY_F11))
-    {
-        ToggleFullscreen();
     }
 
     if (IsKeyPressed(KEY_ONE))
