@@ -359,46 +359,126 @@ app_render(app_state_t *app_state, f64 dt)
     EndMode3D();
 
     // UI -----------------------------------------------------------------------------
-    DrawTextEx(app_state->main_font, TextFormat("FPS: %i", GetFPS()), (Vector2){10, 10}, 20, 2, WHITE);
+    u8 font_size = 20;
+    u8 font_spacing = 2;
+
+    DrawTextEx(
+        app_state->main_font,
+        TextFormat("FPS: %i", GetFPS()), (Vector2){10, 10},
+        font_size,
+        font_spacing,
+        WHITE);
+
+    font_size = 16;
+    font_spacing = 2;
 
     if (!app_state->is_paused)
     {
-        DrawTextEx(app_state->main_font, TextFormat("scroll to camera_zoom: %.2f", app_state->camera_zoom), (Vector2){10, 50}, 16, 2, WHITE);
+        DrawTextEx(
+            app_state->main_font,
+            TextFormat("scroll to camera_zoom: %.2f", app_state->camera_zoom),
+            (Vector2){10, 50},
+            font_size,
+            font_spacing,
+            WHITE);
     }
 
-    DrawTextEx(app_state->main_font, TextFormat("Press F11 to toggle fullscreen"), (Vector2){10, 70}, 16, 2, WHITE);
+    DrawTextEx(
+        app_state->main_font,
+        TextFormat("Press F11 to toggle fullscreen"),
+        (Vector2){10, 70},
+        font_size,
+        font_spacing,
+        WHITE);
 
-    DrawTextEx(app_state->main_font, TextFormat("Press 1, 2, or 3 to toggle which data to draw"), (Vector2){10, 90}, 16, 2, WHITE);
+    DrawTextEx(
+        app_state->main_font,
+        TextFormat("Press 1, 2, or 3 to toggle which data to draw"),
+        (Vector2){10, 90},
+        font_size,
+        font_spacing,
+        WHITE);
 
-    DrawTextEx(app_state->main_font, TextFormat("Red are uniformly distributed"), (Vector2){10, 110}, 16, 2, RED);
-    DrawTextEx(app_state->main_font, TextFormat("Blue are real data"), (Vector2){10, 130}, 16, 2, BLUE);
+    DrawTextEx(
+        app_state->main_font,
+        TextFormat("Red are uniformly distributed"),
+        (Vector2){10, 110},
+        font_size,
+        font_spacing,
+        RED);
+
+    DrawTextEx(
+        app_state->main_font,
+        TextFormat("Blue are real data"),
+        (Vector2){10, 130},
+        font_size,
+        font_spacing,
+        BLUE);
 
     if (app_state->is_paused)
     {
-        DrawTextEx(app_state->main_font, TextFormat("Press W, A, S, D, Q, E to move the camera + Mouse"), (Vector2){10, 150}, 16, 2, WHITE);
-        DrawTextEx(app_state->main_font, TextFormat("Press LShift to move slower"), (Vector2){10, 170}, 16, 2, WHITE);
+        DrawTextEx(
+            app_state->main_font,
+            TextFormat("Press W, A, S, D, Q, E to move the camera + Mouse"),
+            (Vector2){10, 150},
+            font_size,
+            font_spacing,
+            WHITE);
+
+        DrawTextEx(
+            app_state->main_font,
+            TextFormat("Press LShift to move slower"),
+            (Vector2){10, 170},
+            font_size,
+            font_spacing,
+            WHITE);
     }
 
     if (app_state->is_paused)
     {
-        const f64 TextWidth = MeasureText("Press Space again to go back to Auto Look", 16);
-        DrawTextEx(app_state->main_font, TextFormat("Press Space again to go back to Auto Look"), (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f}, 16, 2, PURPLE);
+        const f64 TextWidth = MeasureText("Press Space again to go back to Auto Look", font_size);
+        DrawTextEx(
+            app_state->main_font,
+            TextFormat("Press Space again to go back to Auto Look"),
+            (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f},
+            font_size,
+            font_spacing,
+            PURPLE);
     }
     else
     {
-        const f64 TextWidth = MeasureText("Press Space to enter Free Look mode", 16);
-        DrawTextEx(app_state->main_font, "Press Space to enter Free Look mode", (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f}, 16, 2, GREEN);
+        const f64 TextWidth = MeasureText("Press Space to enter Free Look mode", font_size);
+        DrawTextEx(
+            app_state->main_font,
+            "Press Space to enter Free Look mode",
+            (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f},
+            font_size,
+            font_spacing,
+            GREEN);
     }
 
+    font_size = 20;
     if (app_state->is_paused)
     {
-        const char *IsPausedText = "Free Look";
-        DrawTextEx(app_state->main_font, IsPausedText, (Vector2){app_state->window_width - 128.0f - 64.0f, 30}, 20, 2, PURPLE);
+        const char *is_paused_text = "Free Look";
+        DrawTextEx(
+            app_state->main_font,
+            is_paused_text,
+            (Vector2){app_state->window_width - 128.0f - 64.0f, 30},
+            font_size,
+            font_spacing,
+            PURPLE);
     }
     else
     {
-        const char *IsPausedText = "Auto Look";
-        DrawTextEx(app_state->main_font, IsPausedText, (Vector2){app_state->window_width - 64.0f - 128.0f - 32.0f, 30}, 20, 2, GREEN);
+        const char *is_paused_text = "Auto Look";
+        DrawTextEx(
+            app_state->main_font,
+            is_paused_text,
+            (Vector2){app_state->window_width - 64.0f - 128.0f - 32.0f, 30},
+            font_size,
+            font_spacing,
+            GREEN);
     }
 
     EndDrawing();
