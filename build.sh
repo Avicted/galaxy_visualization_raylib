@@ -6,7 +6,8 @@ set -xe
 mkdir -p ./build
 
 CC=clang
-CFLAGS="-std=c99 -ggdb -O0 -Wall -Wextra -Werror"
+# CFLAGS="-std=c99 -ggdb -O0 -Wall -Wextra -Werror"
+CFLAGS="-std=c99 -O3 -Wall -Wextra -Werror"
 LDLIBS="-lm -lraylib"
 
 SRC_FILES=(
