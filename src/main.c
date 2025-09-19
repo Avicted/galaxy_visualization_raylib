@@ -635,7 +635,7 @@ app_init(app_state_t *app_state)
 
     app_state->main_font = LoadFontEx("./resources/fonts/retro-pixel-arcade.ttf", 128, 0, 250);
 
-    app_state->sphere_mesh = GenMeshSphere(0.2f, 16, 16);
+    app_state->sphere_mesh = GenMeshSphere(0.2f, 8, 8);
 
     i32 shader_init_result = app_init_shaders(app_state);
     if (shader_init_result != 0)
