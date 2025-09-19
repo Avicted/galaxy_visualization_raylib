@@ -2,10 +2,14 @@ project('galaxy_visualization_raylib', 'c',
   version : '0.2.1',
   default_options : [
     'c_std=c99',
-    'buildtype=debug',
-    'optimization=0',
+    
+    # 'buildtype=debug',
+    # 'optimization=0',
+    # 'c_args=-ggdb',
+    'buildtype=release',
+    'optimization=3',
+
     'warning_level=3',
-    'c_args=-ggdb',
     'c_args=-Wall',
     'c_args=-Wextra',
     'c_args=-Werror',
