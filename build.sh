@@ -17,6 +17,6 @@ INCLUDE_DIRS="-I./include"
 OUTPUT_DIR="./build"
 EXECUTABLE_NAME="galaxy_visualization_raylib"
 
-cp -r resources $OUTPUT_DIR
+cp -r assets $OUTPUT_DIR
 
 $CC $CFLAGS $INCLUDE_DIRS -o $OUTPUT_DIR/$EXECUTABLE_NAME ${SRC_FILES[@]} $LDLIBS

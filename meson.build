@@ -31,4 +31,4 @@ exe = executable(
     install: false,
 )
 
-meson.add_install_script('cp', '-r', 'resources', meson.project_build_root() + '/resources')
+meson.add_install_script('cp', '-r', 'assets', meson.project_build_root() + '/assets')
