@@ -308,7 +308,7 @@ app_update(app_state_t *app_state, f64 dt)
     if (IsKeyPressed(KEY_SPACE))
     {
         app_state->is_paused = !app_state->is_paused;
-        printf("\tIsPaused: %s\n", app_state->is_paused ? "true" : "false");
+        printf("\tis_paused: %s\n", app_state->is_paused ? "true" : "false");
     }
 
     rotate_camera_around_origo(app_state, dt);
@@ -359,7 +359,7 @@ app_render(app_state_t *app_state, f64 dt)
     EndMode3D();
 
     // UI -----------------------------------------------------------------------------
-    u8 font_size = 20;
+    u8 font_size = 30;
     u8 font_spacing = 2;
 
     DrawTextEx(
@@ -369,14 +369,14 @@ app_render(app_state_t *app_state, f64 dt)
         font_spacing,
         WHITE);
 
-    font_size = 16;
+    font_size = 24;
     font_spacing = 2;
 
     if (!app_state->is_paused)
     {
         DrawTextEx(
             app_state->main_font,
-            TextFormat("scroll to camera_zoom: %.2f", app_state->camera_zoom),
+            TextFormat("Scroll to zoom: %.2f", app_state->camera_zoom),
             (Vector2){10, 50},
             font_size,
             font_spacing,
@@ -405,7 +405,7 @@ app_render(app_state_t *app_state, f64 dt)
         (Vector2){10, 110},
         font_size,
         font_spacing,
-        RED);
+        (Color){255, 128, 0, 255});
 
     DrawTextEx(
         app_state->main_font,
@@ -413,7 +413,7 @@ app_render(app_state_t *app_state, f64 dt)
         (Vector2){10, 130},
         font_size,
         font_spacing,
-        BLUE);
+        (Color){0, 128, 255, 255});
 
     if (app_state->is_paused)
     {
@@ -434,30 +434,31 @@ app_render(app_state_t *app_state, f64 dt)
             WHITE);
     }
 
+    font_size = 30;
     if (app_state->is_paused)
     {
-        const f64 TextWidth = MeasureText("Press Space again to go back to Auto Look", font_size);
+        const f64 text_width = MeasureText("Press Space again to go back to Auto Look", font_size);
         DrawTextEx(
             app_state->main_font,
             TextFormat("Press Space again to go back to Auto Look"),
-            (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f},
+            (Vector2){(f32)(app_state->window_width / 2.0f - (f32)text_width + 500.0f / 2.0f), (f32)app_state->window_height - 100.0f},
             font_size,
             font_spacing,
             PURPLE);
     }
     else
     {
-        const f64 TextWidth = MeasureText("Press Space to enter Free Look mode", font_size);
+        const f64 text_width = MeasureText("Press Space to enter Free Look mode", font_size);
         DrawTextEx(
             app_state->main_font,
             "Press Space to enter Free Look mode",
-            (Vector2){(f32)(app_state->window_width / 2.0f - (f32)TextWidth - 64.0f / 2.0f), (f32)app_state->window_height - 30.0f},
+            (Vector2){(f32)(app_state->window_width / 2.0f - (f32)text_width + 500.0f / 2.0f), (f32)app_state->window_height - 100.0f},
             font_size,
             font_spacing,
             GREEN);
     }
 
-    font_size = 20;
+    font_size = 30;
     if (app_state->is_paused)
     {
         const char *is_paused_text = "Free Look";
@@ -487,8 +488,8 @@ app_render(app_state_t *app_state, f64 dt)
 internal void
 print_memory_usage(app_state_t *app_state)
 {
-    printf("\n\tMemory used in GigaBytes: %f\n", (f64)app_state->cpu_memory_allocated / (f64)Gigabytes(1));
-    printf("\tMemory used in MegaBytes: %f\n", (f64)app_state->cpu_memory_allocated / (f64)Megabytes(1));
+    printf("\n\tMemory used in GB: %f\n", (f64)app_state->cpu_memory_allocated / (f64)Gigabytes(1));
+    printf("\tMemory used in MB: %f\n", (f64)app_state->cpu_memory_allocated / (f64)Megabytes(1));
 }
 
 internal void
@@ -632,7 +633,8 @@ app_init(app_state_t *app_state)
         return (1);
     }
 
-    app_state->main_font = LoadFontEx("./resources/fonts/SuperMarioBros2.ttf", 32, 0, 250);
+    app_state->main_font = LoadFontEx("./resources/fonts/retro-pixel-arcade.ttf", 128, 0, 250);
+
     app_state->sphere_mesh = GenMeshSphere(0.2f, 16, 16);
 
     i32 shader_init_result = app_init_shaders(app_state);
@@ -676,22 +678,22 @@ app_read_input_data(app_state_t *app_state)
 
     if (read_input_data_from_file(data_a_filename, app_state->data_points_a))
     {
-        printf("\tReadInputDataFromFile: %s succeeded!\n", data_a_filename);
+        printf("\tread_input_data_from_file: %s succeeded!\n", data_a_filename);
     }
     else
     {
-        printf("\tReadInputDataFromFile: %s failed!\n", data_a_filename);
+        printf("\tread_input_data_from_file: %s failed!\n", data_a_filename);
         app_cleanup(app_state);
         return (1);
     }
 
     if (read_input_data_from_file(data_b_filename, app_state->data_points_b))
     {
-        printf("\tReadInputDataFromFile: %s succeeded!\n", data_b_filename);
+        printf("\tread_input_data_from_file: %s succeeded!\n", data_b_filename);
     }
     else
     {
-        printf("\tReadInputDataFromFile: %s failed!\n", data_b_filename);
+        printf("\tread_input_data_from_file: %s failed!\n", data_b_filename);
         app_cleanup(app_state);
         return (1);
     }
@@ -857,8 +859,11 @@ app_platform_init(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
+
     SetTargetFPS(60);
+    SetWindowIcon(LoadImage("./resources/images/app_icon.png"));
 
     return (0);
 }
