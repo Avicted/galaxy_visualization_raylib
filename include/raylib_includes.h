@@ -1,4 +1,5 @@
-#pragma once
+#ifndef RAYLIB_INCLUDES_H
+#define RAYLIB_INCLUDES_H
 
 // Raylib headers
 #include "raylib.h"
@@ -15,3 +16,5 @@
 #if defined(PLATFORM_WEB)
 #include <emscripten/emscripten.h>
 #endif
+
+#endif // RAYLIB_INCLUDES_H
