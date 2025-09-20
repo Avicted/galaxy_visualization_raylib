@@ -16,10 +16,10 @@ typedef struct
 
 typedef enum
 {
-    DRAW_DATA_A = 0,
-    DRAW_DATA_B = 1,
-    DRAW_DATA_ALL = 3,
-    DRAW_DATA_COUNT = 4
+    DRAW_DATA_A,
+    DRAW_DATA_B,
+    DRAW_DATA_ALL,
+    DRAW_DATA_COUNT,
 } draw_data_t;
 
 typedef struct
