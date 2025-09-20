@@ -1,5 +1,7 @@
 // Defines -----------------------------------------------------------------------
 #define RLIGHTS_IMPLEMENTATION
+#define INITIAL_WINDOW_WIDTH 1280
+#define INITIAL_WINDOW_HEIGHT 720
 
 // Includes ----------------------------------------------------------------------
 #include "redefines.h"
@@ -24,9 +26,11 @@ typedef enum
 
 typedef struct
 {
-    // @Note(Victor): Data from the course, only celestial coordinates, no redshift (distance)
+    // @Note(Victor): Data from the ÅA course, only celestial coordinates, no redshift (distance)
     arcmin_data_t *data_points_a;
     arcmin_data_t *data_points_b;
+    ul data_point_count;
+
     draw_data_t data_to_draw;
 
     u64 cpu_memory_allocated;
@@ -69,7 +73,7 @@ internal void app_update(app_state_t *app_state, f64 dt);
 internal void app_render(app_state_t *app_state, f64 dt);
 internal void app_cleanup(app_state_t *app_state);
 
-internal bool read_input_data_from_file(const char *FileName, arcmin_data_t *DataPointsLocation);
+internal usize read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_location, ul max_points);
 internal i32 upload_matrix_transforms_to_gpu(app_state_t *app_state);
 internal i32 initialize_transforms_course_data(app_state_t *app_state);
 internal void parse_input_args(app_state_t *app_state, i32 argc, char **argv);
@@ -83,7 +87,7 @@ i32 main(i32 argc, char **argv)
     if (app_state == NULL)
     {
         printf("Error allocating memory for app_state!\n");
-        return (1);
+        return 1;
     }
 
     parse_input_args(app_state, argc, argv);
@@ -92,14 +96,14 @@ i32 main(i32 argc, char **argv)
     if (app_init_result != 0)
     {
         fprintf(stderr, "ERROR: app_init failed.\n");
-        return (1);
+        return 1;
     }
 
     app_run(app_state);
 
     app_cleanup(app_state);
 
-    return (0);
+    return 0;
 }
 
 internal void
@@ -209,7 +213,7 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
         const Vector3 right = Vector3Normalize(Vector3CrossProduct(*direction, cam->up));
         const Vector3 up = Vector3Normalize(Vector3CrossProduct(right, *direction));
 
-        if (IsKeyDown(KEY_LEFT_SHIFT))
+        if (IsKeyDown(KEY_LEFT_CONTROL))
         {
             speed *= 0.1f;
             vertical_speed *= 0.1f;
@@ -231,11 +235,11 @@ rotate_camera_around_origo(app_state_t *app_state, f64 dt)
         {
             cam->position = Vector3Subtract(cam->position, Vector3Scale(right, speed));
         }
-        if (IsKeyDown(KEY_Q))
+        if (IsKeyDown(KEY_LEFT_SHIFT))
         {
             cam->position = Vector3Subtract(cam->position, Vector3Scale(up, vertical_speed));
         }
-        if (IsKeyDown(KEY_E))
+        if (IsKeyDown(KEY_SPACE))
         {
             cam->position = Vector3Add(cam->position, Vector3Scale(up, vertical_speed));
         }
@@ -299,7 +303,7 @@ app_update(app_state_t *app_state, f64 dt)
         app_state->data_to_draw = DRAW_DATA_ALL;
     }
 
-    if (IsKeyPressed(KEY_SPACE))
+    if (IsKeyPressed(KEY_R))
     {
         app_state->is_paused = !app_state->is_paused;
         printf("\tis_paused: %s\n", app_state->is_paused ? "true" : "false");
@@ -310,9 +314,8 @@ app_update(app_state_t *app_state, f64 dt)
     f64 scroll = GetMouseWheelMove();
     if (scroll != 0.0f)
     {
-        const f64 zoom_change = -2.5f;
-        f64 Speed = zoom_change;
-        app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * Speed * dt, 0.0f, 10.0f);
+        const f64 zoom_change = -32.0f;
+        app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * zoom_change * dt, 0.5f, 5.0f);
     }
 }
 
@@ -339,13 +342,23 @@ app_render(app_state_t *app_state, f64 dt)
     {
         const Color DARK_BLUE = {0, 0, 255, 255};
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = DARK_BLUE;
-        DrawMeshInstanced(app_state->sphere_mesh, app_state->material_instance, app_state->matrix_transforms_a, MAX_DATA_POINTS);
+
+        DrawMeshInstanced(
+            app_state->sphere_mesh,
+            app_state->material_instance,
+            app_state->matrix_transforms_a,
+            app_state->data_point_count);
     }
 
     if (app_state->data_to_draw == DRAW_DATA_B || app_state->data_to_draw == DRAW_DATA_ALL)
     {
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = RED;
-        DrawMeshInstanced(app_state->sphere_mesh, app_state->material_instance, app_state->matrix_transforms_b, MAX_DATA_POINTS);
+
+        DrawMeshInstanced(
+            app_state->sphere_mesh,
+            app_state->material_instance,
+            app_state->matrix_transforms_b,
+            app_state->data_point_count);
     }
 
     EndMode3D();
@@ -377,7 +390,7 @@ app_render(app_state_t *app_state, f64 dt)
 
     DrawTextEx(
         app_state->main_font,
-        TextFormat("Press F11 to toggle fullscreen"),
+        TextFormat("Press F11 (ALT + ENTER) to toggle fullscreen"),
         (Vector2){10, 70},
         font_size,
         font_spacing,
@@ -411,7 +424,7 @@ app_render(app_state_t *app_state, f64 dt)
     {
         DrawTextEx(
             app_state->main_font,
-            TextFormat("Press W, A, S, D, Q, E to move the camera + Mouse"),
+            TextFormat("Press WASD (Shift, Space) to move + mouse look"),
             (Vector2){10, 150},
             font_size,
             font_spacing,
@@ -419,7 +432,7 @@ app_render(app_state_t *app_state, f64 dt)
 
         DrawTextEx(
             app_state->main_font,
-            TextFormat("Press LShift to move slower"),
+            TextFormat("Press LControl to move slower"),
             (Vector2){10, 170},
             font_size,
             font_spacing,
@@ -429,10 +442,10 @@ app_render(app_state_t *app_state, f64 dt)
     font_size = 30;
     if (app_state->is_paused)
     {
-        const f64 text_width = MeasureText("Press Space again to go back to Auto Look", font_size);
+        const f64 text_width = MeasureText("Press R again to go back to Auto Look", font_size);
         DrawTextEx(
             app_state->main_font,
-            TextFormat("Press Space again to go back to Auto Look"),
+            TextFormat("Press R again to go back to Auto Look"),
             (Vector2){(f32)(app_state->window_width / 2.0f - (f32)text_width + 500.0f / 2.0f), (f32)app_state->window_height - 100.0f},
             font_size,
             font_spacing,
@@ -440,10 +453,10 @@ app_render(app_state_t *app_state, f64 dt)
     }
     else
     {
-        const f64 text_width = MeasureText("Press Space to enter Free Look mode", font_size);
+        const f64 text_width = MeasureText("Press R to enter Free Look mode", font_size);
         DrawTextEx(
             app_state->main_font,
-            "Press Space to enter Free Look mode",
+            "Press R to enter Free Look mode",
             (Vector2){(f32)(app_state->window_width / 2.0f - (f32)text_width + 500.0f / 2.0f), (f32)app_state->window_height - 100.0f},
             font_size,
             font_spacing,
@@ -457,7 +470,7 @@ app_render(app_state_t *app_state, f64 dt)
         DrawTextEx(
             app_state->main_font,
             is_paused_text,
-            (Vector2){app_state->window_width - 128.0f - 64.0f, 30},
+            (Vector2){app_state->window_width - 128.0f - 95.0f, 30},
             font_size,
             font_spacing,
             PURPLE);
@@ -487,106 +500,142 @@ print_memory_usage(app_state_t *app_state)
 internal void
 app_cleanup(app_state_t *app_state)
 {
-    CloseWindow();
-    printf("\n\tClosed window and OpenGL context\n");
+    if (!app_state)
+    {
+        return;
+    }
 
-    if (app_state->data_points_a != NULL)
+    if (app_state->earth_model.meshCount > 0)
+    {
+        UnloadModel(app_state->earth_model);
+    }
+    if (app_state->sphere_mesh.vboId)
+    {
+        UnloadMesh(app_state->sphere_mesh);
+    }
+    if (app_state->material_instance.shader.id)
+    {
+        UnloadShader(app_state->material_instance.shader);
+    }
+
+    if (app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].texture.id)
+    {
+        UnloadTexture(app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].texture);
+    }
+    if (app_state->material_instance.maps[MATERIAL_MAP_SPECULAR].texture.id)
+    {
+        UnloadTexture(app_state->material_instance.maps[MATERIAL_MAP_SPECULAR].texture);
+    }
+
+    if (app_state->main_font.texture.id)
+    {
+        UnloadFont(app_state->main_font);
+    }
+
+    if (app_state->data_points_a)
     {
         free(app_state->data_points_a);
-        app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
-        printf("\n\tFreeing data_points_a %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data_t));
-        print_memory_usage(app_state);
+        app_state->cpu_memory_allocated -= (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
     }
-
-    if (app_state->data_points_b != NULL)
+    if (app_state->data_points_b)
     {
         free(app_state->data_points_b);
-        app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(arcmin_data_t);
-        printf("\n\tFreeing data_points_b: %lu\n", MAX_DATA_POINTS * sizeof(arcmin_data_t));
-        print_memory_usage(app_state);
+        app_state->cpu_memory_allocated -= (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
     }
-
     if (app_state->matrix_transforms_a)
     {
         free(app_state->matrix_transforms_a);
-        app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
-        printf("\n\tFreeing matrix_transforms_a: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
-        print_memory_usage(app_state);
+        app_state->cpu_memory_allocated -= (usize)MAX_DATA_POINTS * sizeof(Matrix);
     }
-
     if (app_state->matrix_transforms_b)
     {
         free(app_state->matrix_transforms_b);
-        app_state->cpu_memory_allocated -= MAX_DATA_POINTS * sizeof(Matrix);
-        printf("\n\tFreeing matrix_transforms_b: %lu\n", MAX_DATA_POINTS * sizeof(Matrix));
-        print_memory_usage(app_state);
+        app_state->cpu_memory_allocated -= (usize)MAX_DATA_POINTS * sizeof(Matrix);
     }
 
-    if (app_state != NULL)
-    {
-        free(app_state);
-    }
+    printf("\nMemory usage at the end of the program:");
+    print_memory_usage(app_state);
 
-    // @Note(Victor): There should be no allocated memory left
     ASSERT(app_state->cpu_memory_allocated == 0);
+
+    CloseWindow();
+
+    free(app_state);
 }
 
-internal bool
-read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_location)
+internal usize
+read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_location, ul max_points)
 {
     FILE *file = fopen(file_name, "r");
     if (file == NULL)
     {
-        printf("Error opening file!\n");
-        return (false);
+        fprintf(stderr, "Error opening file: %s\n", file_name);
+        return -1;
     }
 
-    // Read the header
     char line[1024];
+
     if (fgets(line, sizeof(line), file) == NULL)
     {
-        printf("Error reading header!\n");
-        return (false);
+        fprintf(stderr, "Error reading header from %s\n", file_name);
+        fclose(file);
+        return -1;
     }
 
-    i32 i = 0;
-    while (fgets(line, sizeof(line), file) != NULL)
+    ul i = 0;
+    while (i < max_points && fgets(line, sizeof(line), file) != NULL)
     {
-        // @Note(Victor): We expect the input data to be separated by tabs !!!
-        char *token = strtok(line, "\t");
-        i32 j = 0;
-        while (token != NULL)
+        usize len = strlen(line);
+        if (len > 0 && (line[len - 1] == '\n' || line[len - 1] == '\r'))
         {
-            if (j == 0)
-            {
-                data_points_location[i].right_ascension = atof(token);
-            }
-            else if (j == 1)
-            {
-                data_points_location[i].declination = atof(token);
-            }
-            else
-            {
-                printf("Error parsing line!\n");
-                return (false);
-            }
-
-            token = strtok(NULL, "\t");
-            j++;
+            line[--len] = '\0';
+        }
+        if (len == 0)
+        {
+            continue;
         }
 
-        i++;
+        char *p = line;
+        char *endptr = NULL;
+
+        f64 ra = strtod(p, &endptr);
+        if (endptr == p)
+        {
+            fprintf(stderr, "Parse error (RA) on line %lu in %s: '%s'\n", (ul)i + 2, file_name, line);
+            fclose(file);
+            return -1;
+        }
+
+        p = endptr;
+        while (*p == '\t' || *p == ' ' || *p == ',')
+        {
+            ++p;
+        }
+
+        f64 dec = strtod(p, &endptr);
+        if (endptr == p)
+        {
+            fprintf(stderr, "Parse error (DEC) on line %lu in %s: '%s'\n", (ul)i + 2, file_name, line);
+            fclose(file);
+            return -1;
+        }
+
+        data_points_location[i].right_ascension = ra;
+        data_points_location[i].declination = dec;
+
+        ++i;
     }
 
     fclose(file);
-
-    return (true);
+    return (usize)i;
 }
 
 internal i32
 app_init(app_state_t *app_state)
 {
     *app_state = (app_state_t){
+        .window_width = INITIAL_WINDOW_WIDTH,
+        .window_height = INITIAL_WINDOW_HEIGHT,
         .cpu_memory_allocated = 0L,
         .debug = false,
         .data_is_loaded = false,
@@ -600,11 +649,11 @@ app_init(app_state_t *app_state)
             .position = (Vector3){0.0f, 0.0f, 0.0f},
             .target = (Vector3){0.0f, 0.0f, 0.0f},
             .up = (Vector3){0.0f, 1.0f, 0.0f},
-            .fovy = 65.0f,
+            .fovy = 85.0f,
             .projection = CAMERA_PERSPECTIVE,
         },
 
-        .camera_zoom = 1.0f * PI,
+        .camera_zoom = 0.8f * PI,
         .camera_yaw = 45.80f,
         .camera_pitch = 42.12f,
         .camera_direction = (Vector3){0},
@@ -623,7 +672,7 @@ app_init(app_state_t *app_state)
     if (app_read_input_data_result != 0)
     {
         fprintf(stderr, "ERROR: Could not perform app_read_input_data.\n");
-        return (1);
+        return 1;
     }
 
     printf("\tHello from raylib_galaxy_application!\n\n");
@@ -632,14 +681,14 @@ app_init(app_state_t *app_state)
     if (matrix_gpu_upload_result != 0)
     {
         fprintf(stderr, "ERROR: Could not upload matrix transforms to the GPU.\n");
-        return (1);
+        return 1;
     }
 
     i32 platform_init_result = app_init_platform(app_state);
     if (platform_init_result != 0)
     {
         fprintf(stderr, "ERROR: Could not initialize the platform API (Raylib)\n");
-        return (1);
+        return 1;
     }
 
     app_state->main_font = LoadFontEx("./assets/fonts/retro-pixel-arcade.ttf", 128, 0, 250);
@@ -650,7 +699,7 @@ app_init(app_state_t *app_state)
     if (shader_init_result != 0)
     {
         fprintf(stderr, "ERROR: Could not initialize the shader(s)\n");
-        return (1);
+        return 1;
     }
 
     printf("\n\tMemory usage before we start the main program loop\n");
@@ -660,7 +709,7 @@ app_init(app_state_t *app_state)
     Matrix earch_scale_matrix = MatrixScale(0.01f, 0.01f, 0.01f);
     app_state->earth_model.transform = MatrixMultiply(app_state->earth_model.transform, earch_scale_matrix);
 
-    return (0);
+    return 0;
 }
 
 internal i32
@@ -669,113 +718,88 @@ app_read_input_data(app_state_t *app_state)
     app_state->data_points_a = (arcmin_data_t *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data_t));
     if (app_state->data_points_a == NULL)
     {
-        printf("Error allocating memory for data_points_a!\n");
-        free(app_state);
-        return (1);
+        fprintf(stderr, "Error allocating memory for data_points_a!\n");
+        return 1;
     }
-    app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(arcmin_data_t);
+    app_state->cpu_memory_allocated += (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
 
     app_state->data_points_b = (arcmin_data_t *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data_t));
     if (app_state->data_points_b == NULL)
     {
-        printf("Error allocating memory for data_points_b!\n");
-        app_cleanup(app_state);
-        return (1);
+        fprintf(stderr, "Error allocating memory for data_points_b!\n");
+        free(app_state->data_points_a);
+        app_state->cpu_memory_allocated -= (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
+        app_state->data_points_a = NULL;
+        return 1;
     }
-    app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(arcmin_data_t);
+    app_state->cpu_memory_allocated += (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
 
-    if (read_input_data_from_file(data_a_filename, app_state->data_points_a))
+    usize count_a = read_input_data_from_file(data_a_filename, app_state->data_points_a, MAX_DATA_POINTS);
+    if (count_a < 0)
     {
-        printf("\tread_input_data_from_file: %s succeeded!\n", data_a_filename);
-    }
-    else
-    {
-        printf("\tread_input_data_from_file: %s failed!\n", data_a_filename);
-        app_cleanup(app_state);
-        return (1);
+        fprintf(stderr, "Failed reading %s\n", data_a_filename);
+        return 1;
     }
 
-    if (read_input_data_from_file(data_b_filename, app_state->data_points_b))
+    usize count_b = read_input_data_from_file(data_b_filename, app_state->data_points_b, MAX_DATA_POINTS);
+    if (count_b < 0)
     {
-        printf("\tread_input_data_from_file: %s succeeded!\n", data_b_filename);
-    }
-    else
-    {
-        printf("\tread_input_data_from_file: %s failed!\n", data_b_filename);
-        app_cleanup(app_state);
-        return (1);
+        fprintf(stderr, "Failed reading %s\n", data_b_filename);
+        return 1;
     }
 
-    ul data_count_read = 0;
-    for (ul i = 0; i < MAX_DATA_POINTS; ++i)
+    if ((usize)count_a != (usize)count_b)
     {
-        if (app_state->data_points_a[i].right_ascension != 0.0f)
-        {
-            data_count_read++;
-        }
+        fprintf(stderr, "Warning: datasets A and B have different row counts: %zd vs %zd\n", count_a, count_b);
     }
 
-    ASSERT(data_count_read == MAX_DATA_POINTS);
-    ASSERT(app_state->data_points_b != NULL);
+    app_state->data_point_count = (ul)MIN((usize)count_a, (usize)count_b); // store the actual amount available
 
-    data_count_read = 0;
-    for (ul i = 0; i < MAX_DATA_POINTS; ++i)
+    if (app_state->data_point_count == 0)
     {
-        if (app_state->data_points_b[i].right_ascension != 0.0f)
-        {
-            data_count_read++;
-        }
+        fprintf(stderr, "No data loaded from files.\n");
+        return 1;
     }
-
-    ASSERT(data_count_read == MAX_DATA_POINTS);
 
     app_state->data_is_loaded = true;
-
-    return (0);
+    return 0;
 }
 
 internal i32
 initialize_transforms_course_data(app_state_t *app_state)
 {
-    for (ul i = 0; i < MAX_DATA_POINTS; ++i)
+    for (ul i = 0; i < app_state->data_point_count; ++i)
     {
         // data_points_a real galaxies
         {
-            // Transform the arc minutes into radians that the trigonometric functions take as input. (sinf, cosf, tanf)
-            const f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / 60.0f) * DEG2RAD;
-            const f64 declination_rad = (app_state->data_points_a[i].declination / 60.0f) * DEG2RAD;
+            const f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / 60.0) * DEG2RAD;
+            const f64 declination_rad = (app_state->data_points_a[i].declination / 60.0) * DEG2RAD;
+            const f64 radius = 50.0;
+            const f64 x = radius * cos(right_ascension_rad) * cos(declination_rad);
+            const f64 y = radius * sin(declination_rad);
+            const f64 z = radius * sin(right_ascension_rad) * cos(declination_rad);
 
-            // Calculate the position on the sphere using spherical coordinates
-            const f64 radius = 50.0f;
-            const f64 x = radius * cosf(right_ascension_rad) * cosf(declination_rad);
-            const f64 y = radius * sinf(declination_rad);
-            const f64 z = radius * sinf(right_ascension_rad) * cosf(declination_rad);
-
-            // Create a model matrix for each data point to position it
             app_state->matrix_transforms_a[i] = MatrixIdentity();
             app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixScale(0.1f, 0.1f, 0.1f));
-            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate(x, y, z));
+            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate((f32)x, (f32)y, (f32)z));
         }
 
         // data_points_b uniformly distributed (galaxies)
         {
-            const f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / 60.0f) * DEG2RAD;
-            const f64 declination_rad = (app_state->data_points_b[i].declination / 60.0f) * DEG2RAD;
+            const f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / 60.0) * DEG2RAD;
+            const f64 declination_rad = (app_state->data_points_b[i].declination / 60.0) * DEG2RAD;
+            const f64 radius = 50.0;
+            const f64 x = radius * cos(right_ascension_rad) * cos(declination_rad);
+            const f64 y = radius * sin(declination_rad);
+            const f64 z = radius * sin(right_ascension_rad) * cos(declination_rad);
 
-            // Calculate the position on the sphere using spherical coordinates
-            const f64 radius = 50.0f;
-            const f64 x = radius * cosf(right_ascension_rad) * cosf(declination_rad);
-            const f64 y = radius * sinf(declination_rad);
-            const f64 z = radius * sinf(right_ascension_rad) * cosf(declination_rad);
-
-            // Create a model matrix for each data point to position it
             app_state->matrix_transforms_b[i] = MatrixIdentity();
             app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixScale(0.1f, 0.1f, 0.1f));
-            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate(x, y, z));
+            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate((f32)x, (f32)y, (f32)z));
         }
     }
 
-    return (0);
+    return 0;
 }
 
 internal i32
@@ -785,7 +809,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     if (app_state->matrix_transforms_a == NULL)
     {
         fprintf(stderr, "ERROR: Could not allocate matrix_transforms_a.\n");
-        return (1);
+        return 1;
     }
     app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
 
@@ -793,7 +817,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     if (app_state->matrix_transforms_b == NULL)
     {
         fprintf(stderr, "ERROR: Could not allocate matrix_transforms_b.\n");
-        return (1);
+        return 1;
     }
     app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
 
@@ -801,10 +825,10 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     if (course_data_init_result != 0)
     {
         fprintf(stderr, "ERROR: Could not initialize course data matrix transforms.\n");
-        return (1);
+        return 1;
     }
 
-    return (0);
+    return 0;
 }
 
 internal i32
@@ -819,8 +843,8 @@ app_init_shaders(app_state_t *app_state)
     {
         // Setting shader values
         i32 ambient_location = GetShaderLocation(app_state->custom_shader, "ambient");
-        f64 ambient_value[4] = {1.0, 1.0, 1.0, 1.0};
-        SetShaderValue(app_state->custom_shader, ambient_location, &ambient_value, SHADER_UNIFORM_VEC4);
+        f32 ambient_value[4] = {1.0f, 1.0f, 1.0f, 1.0f};
+        SetShaderValue(app_state->custom_shader, ambient_location, ambient_value, SHADER_UNIFORM_VEC4);
 
         i32 color_diffuse_loc = GetShaderLocation(app_state->custom_shader, "colorDiffuse");
         f64 diffuse_value[4] = {1.0, 1.0, 1.0, 1.0};
@@ -834,7 +858,7 @@ app_init_shaders(app_state_t *app_state)
         CreateLight(LIGHT_DIRECTIONAL, (Vector3){0.0f, 0.0f, 1000.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
         CreateLight(LIGHT_DIRECTIONAL, (Vector3){0.0f, 0.0f, -1000.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
 
-        // We also add a point light at the center of the earth
+        // We also add a poi32 light at the center of the earth
         CreateLight(LIGHT_POINT, (Vector3){0.0f, 0.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
     }
 
@@ -857,18 +881,18 @@ app_init_shaders(app_state_t *app_state)
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     }
 
-    return (0);
+    return 0;
 }
 
 internal i32
 app_init_platform(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
 
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
 
     SetWindowIcon(LoadImage("./assets/images/app_icon.png"));
 
-    return (0);
+    return 0;
 }
