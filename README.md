@@ -76,7 +76,7 @@ chmod +x ./build.sh
 
 ##  Demo
 
-![demo](assets/images/galaxy_demo.gif "galaxy_demo.gif")
+![demo](assets/images/galaxy_demo_optimized.mp4 "assets/images/galaxy_demo_optimized.mp4")
 
 ---
 
