@@ -3,11 +3,11 @@ project('galaxy_visualization_raylib', 'c',
   default_options : [
     'c_std=c99',
     
-    'buildtype=debug',
-    'optimization=0',
-    'c_args=-ggdb',
-    #'buildtype=release',
-    #'optimization=3',
+    #'buildtype=debug',
+    #'optimization=0',
+    #'c_args=-ggdb',
+    'buildtype=release',
+    'optimization=3',
 
     'warning_level=3',
     'c_args=-Wall',
