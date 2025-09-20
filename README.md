@@ -75,8 +75,7 @@ chmod +x ./build.sh
 ```
 
 ##  Demo
-
-![demo](assets/images/galaxy_demo_optimized.mp4 "assets/images/galaxy_demo_optimized.mp4")
+<video src="assets/images/galaxy_demo_optimized.mp4" width="1024" autoplay loop muted></video>
 
 ---
 
