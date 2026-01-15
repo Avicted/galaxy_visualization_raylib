@@ -483,10 +483,10 @@ app_render(app_state_t *app_state, f64 dt)
     const Color PANEL_BG = {20, 20, 30, 200};
     const Color PANEL_BORDER = {60, 60, 80, 255};
     const Color TEXT_DIM = {180, 180, 180, 255};
-    const Color ACCENT_CYAN = {100, 220, 255, 255};
-    const Color ACCENT_ORANGE = {255, 160, 80, 255};
-    const Color ACCENT_GREEN = {100, 255, 150, 255};
-    const Color ACCENT_PURPLE = {200, 130, 255, 255};
+    const Color ACCENT_BLUE = {64, 64, 255, 255};
+    const Color ACCENT_RED = {255, 64, 64, 255};
+    const Color ACCENT_GREEN = {100, 255, 64, 255};
+    const Color ACCENT_PURPLE = {255, 64, 255, 255};
 
     // Top-left: Current mode and FPS
     {
@@ -497,7 +497,7 @@ app_render(app_state_t *app_state, f64 dt)
 
         // Dataset name - shorter names
         const char *dataset_names[] = {"Real Data", "Uniform", "Both", "Seyfert 3D"};
-        Color dataset_colors[] = {ACCENT_CYAN, ACCENT_ORANGE, WHITE, ACCENT_PURPLE};
+        Color dataset_colors[] = {ACCENT_BLUE, ACCENT_RED, WHITE, ACCENT_PURPLE};
         DrawTextEx(app_state->main_font, dataset_names[app_state->data_to_draw],
                    (Vector2){16, 12}, 32, 1, dataset_colors[app_state->data_to_draw]);
 
@@ -601,13 +601,13 @@ app_render(app_state_t *app_state, f64 dt)
     {
         const char *hint_text = app_state->is_paused ? "R - Return to Auto Orbit" : "R - Enter Free Look";
         Color hint_color = app_state->is_paused ? ACCENT_PURPLE : ACCENT_GREEN;
-        Vector2 text_size = MeasureTextEx(app_state->main_font, hint_text, 24, 2);
+        Vector2 text_size = MeasureTextEx(app_state->main_font, hint_text, 32, 2);
         f32 hint_x = (app_state->window_width - text_size.x) / 2.0f;
         f32 hint_y = app_state->window_height - 50.0f;
 
-        DrawRectangle((i32)(hint_x - 12), (i32)(hint_y - 8), (i32)(text_size.x + 24), 40, PANEL_BG);
-        DrawRectangleLines((i32)(hint_x - 12), (i32)(hint_y - 8), (i32)(text_size.x + 24), 40, hint_color);
-        DrawTextEx(app_state->main_font, hint_text, (Vector2){hint_x, hint_y}, 24, 2, hint_color);
+        DrawRectangle((i32)(hint_x - 12), (i32)(hint_y - 8), (i32)(text_size.x + 24), 50, PANEL_BG);
+        DrawRectangleLines((i32)(hint_x - 12), (i32)(hint_y - 8), (i32)(text_size.x + 24), 50, hint_color);
+        DrawTextEx(app_state->main_font, hint_text, (Vector2){hint_x, hint_y}, 32, 2, hint_color);
     }
 
     // Help panel (togglable with H)
@@ -664,9 +664,9 @@ app_render(app_state_t *app_state, f64 dt)
         const i32 legend_line_spacing = 28;
 
         DrawTextEx(app_state->main_font, "1 Real (blue)",
-                   (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 0 * legend_line_spacing)}, 24, 1, ACCENT_CYAN);
+                   (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 0 * legend_line_spacing)}, 24, 1, ACCENT_BLUE);
         DrawTextEx(app_state->main_font, "2 Uniform",
-                   (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 1 * legend_line_spacing)}, 24, 1, ACCENT_ORANGE);
+                   (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 1 * legend_line_spacing)}, 24, 1, ACCENT_RED);
         DrawTextEx(app_state->main_font, "3 Both",
                    (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 2 * legend_line_spacing)}, 24, 1, TEXT_DIM);
         DrawTextEx(app_state->main_font, "4 Seyfert",
