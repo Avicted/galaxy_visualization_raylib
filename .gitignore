@@ -3,3 +3,5 @@ build/
 galaxy_visualization_raylib
 
 .vscode/settings.json
+
+*.data

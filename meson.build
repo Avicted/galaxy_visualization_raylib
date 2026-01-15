@@ -44,6 +44,9 @@ exe = executable(
     'galaxy_visualization_raylib', 
     sources,
     dependencies: raylib_dep,
+    c_args: [
+      '-march=native',
+    ],
     link_args : [
       '-lm',
     ],

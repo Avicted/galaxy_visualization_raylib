@@ -1,6 +1,7 @@
 #include "transforms.h"
 #include "includes.h"
 #include "macros.h"
+#include "rlgl.h"
 
 f64 transforms_distance_from_velocity(f64 velocity_km_s)
 {
@@ -203,4 +204,80 @@ i32 transforms_upload_to_gpu(app_state_t *app_state)
     }
 
     return 0;
+}
+
+// Upload instance transforms to GPU as static VBOs (called after OpenGL context is ready)
+i32 transforms_upload_instance_vbos(app_state_t *app_state)
+{
+    // Convert matrices to float16 format (column-major for OpenGL)
+    // This is what raylib does every frame - we do it once
+    float16 *instance_data_a = (float16 *)RL_MALLOC(app_state->data_point_count * sizeof(float16));
+    float16 *instance_data_b = (float16 *)RL_MALLOC(app_state->data_point_count * sizeof(float16));
+
+    if (!instance_data_a || !instance_data_b)
+    {
+        fprintf(stderr, "[ERROR] Failed to allocate instance data buffers\n");
+        return 1;
+    }
+
+    for (ul i = 0; i < app_state->data_point_count; i++)
+    {
+        instance_data_a[i] = MatrixToFloatV(app_state->matrix_transforms_a[i]);
+        instance_data_b[i] = MatrixToFloatV(app_state->matrix_transforms_b[i]);
+    }
+
+    // Upload to GPU as static VBOs
+    app_state->instance_vbo_a = rlLoadVertexBuffer(instance_data_a,
+                                                   app_state->data_point_count * sizeof(float16), false);
+    app_state->instance_vbo_b = rlLoadVertexBuffer(instance_data_b,
+                                                   app_state->data_point_count * sizeof(float16), false);
+
+    RL_FREE(instance_data_a);
+    RL_FREE(instance_data_b);
+
+    printf("[INFO]  Static instance VBOs uploaded: A=%u, B=%u\n",
+           app_state->instance_vbo_a, app_state->instance_vbo_b);
+
+    // Upload redshift data if available
+    if (app_state->redshift_galaxy_count > 0)
+    {
+        float16 *instance_data_redshift = (float16 *)RL_MALLOC(app_state->redshift_galaxy_count * sizeof(float16));
+        if (!instance_data_redshift)
+        {
+            fprintf(stderr, "[ERROR] Failed to allocate redshift instance data\n");
+            return 1;
+        }
+
+        for (ul i = 0; i < app_state->redshift_galaxy_count; i++)
+        {
+            instance_data_redshift[i] = MatrixToFloatV(app_state->matrix_transforms_redshift[i]);
+        }
+
+        app_state->instance_vbo_redshift = rlLoadVertexBuffer(instance_data_redshift,
+                                                              app_state->redshift_galaxy_count * sizeof(float16), false);
+
+        RL_FREE(instance_data_redshift);
+        printf("[INFO]  Redshift instance VBO uploaded: %u\n", app_state->instance_vbo_redshift);
+    }
+
+    return 0;
+}
+
+void transforms_cleanup_instance_vbos(app_state_t *app_state)
+{
+    if (app_state->instance_vbo_a)
+    {
+        rlUnloadVertexBuffer(app_state->instance_vbo_a);
+        app_state->instance_vbo_a = 0;
+    }
+    if (app_state->instance_vbo_b)
+    {
+        rlUnloadVertexBuffer(app_state->instance_vbo_b);
+        app_state->instance_vbo_b = 0;
+    }
+    if (app_state->instance_vbo_redshift)
+    {
+        rlUnloadVertexBuffer(app_state->instance_vbo_redshift);
+        app_state->instance_vbo_redshift = 0;
+    }
 }

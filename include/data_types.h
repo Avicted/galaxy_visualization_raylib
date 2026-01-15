@@ -180,6 +180,11 @@ typedef struct
     Matrix *matrix_transforms_a;
     Matrix *matrix_transforms_b;
 
+    // Static GPU instance buffers (uploaded once, reused every frame)
+    u32 instance_vbo_a;
+    u32 instance_vbo_b;
+    u32 instance_vbo_redshift;
+
     redshift_galaxy_t *redshift_galaxies;
     Matrix *matrix_transforms_redshift;
     Color *redshift_galaxy_colors;

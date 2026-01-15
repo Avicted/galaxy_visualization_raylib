@@ -12,8 +12,9 @@ internal i32
 app_init_platform(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    // SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
 
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
 
     SetWindowIcon(LoadImage("./assets/images/app_icon.png"));
@@ -176,6 +177,12 @@ i32 app_init(app_state_t *app_state)
         return 1;
     }
 
+    if (transforms_upload_instance_vbos(app_state) != 0)
+    {
+        fprintf(stderr, "[ERROR] Failed to upload instance VBOs to GPU\n");
+        return 1;
+    }
+
     print_memory_usage(app_state);
 
     app_state->earth_model = LoadModel("./assets/Earth_1_12756.glb");
@@ -201,6 +208,8 @@ void app_cleanup(app_state_t *app_state)
     {
         return;
     }
+
+    transforms_cleanup_instance_vbos(app_state);
 
     if (app_state->earth_model.meshCount > 0)
     {
