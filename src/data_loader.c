@@ -2,9 +2,9 @@
 #include "includes.h"
 #include "macros.h"
 
-static const char *DATA_A_FILENAME = "./input_data/data_100k_arcmin.txt";
-static const char *DATA_B_FILENAME = "./input_data/flat_100k_arcmin.txt";
-static const char *REDSHIFT_DATA_FILENAME = "./input_data/redshift_input_data/seyfert.dat";
+global_variable const char *DATA_A_FILENAME = "./input_data/data_100k_arcmin.txt";
+global_variable const char *DATA_B_FILENAME = "./input_data/flat_100k_arcmin.txt";
+global_variable const char *REDSHIFT_DATA_FILENAME = "./input_data/redshift_input_data/seyfert.dat";
 
 usize data_loader_read_arcmin_file(const char *file_name, arcmin_data_t *data_points, ul max_points)
 {

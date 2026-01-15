@@ -185,7 +185,7 @@ typedef struct
     ul redshift_galaxy_count;
 } app_state_t;
 
-static const ul MAX_DATA_POINTS = 100000UL;
-static const ul MAX_REDSHIFT_GALAXIES = 2000UL;
+global_variable const ul MAX_DATA_POINTS = 100000UL;
+global_variable const ul MAX_REDSHIFT_GALAXIES = 2000UL;
 
 #endif
