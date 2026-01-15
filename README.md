@@ -12,7 +12,7 @@ The students must leverage the GPU for these calculations on their own using a s
 - The expected runtime for the calculation is approximately 3 seconds.
     - It is possible to optimize the runtime to 0.85 seconds on a single GPU (my own solution tested with one AMD RX 6900 XT).
 - **This program is a visualization of the data, not the solution to the assignment.**
-- Redshift data is sourced from: [Harvard University](https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat) and visualized in 3D space with colors based on redshift values.
+- Additional redshift data from various surveys has been included for visualization purposes.
 
 ## Prerequisites
 
@@ -81,9 +81,48 @@ chmod +x ./build.sh
 
 ---
 
-## Data sources
-- Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
-- Redshift data: https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat
+## Data Sources & Attribution
+
+This repository contains **code and derived galaxy redshift data**.  
+All original data are the property of their respective surveys and authors.  
+This project **does not claim credit for the original data**.
+
+### CfA Redshift Survey
+
+- **Original source:** ZCAT, Harvard–Smithsonian Center for Astrophysics  
+- **URL:** [https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/](https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/)  
+- **Modifications:** Only essential fields retained (e.g., galaxy ID and redshift); extraneous data removed for this project.
+
+**Reference:**  
+
+> Huchra, J., Davis, M., Latham, D., & Tonry, J. (1983).  
+> *A survey of galaxy redshifts. I.*  
+> **Astrophysical Journal Supplement Series**, 52, 89.  
+> [ADS link](https://ui.adsabs.harvard.edu/abs/1983ApJS...52...89H)
+
+---
+
+### SAGA Survey
+
+- **Original source:** SAGA Survey III — Satellite Systems around Milky Way–mass Galaxies  
+- **URL / DOI:** [DOI:10.3847/1538-4357/ad64c4](https://doi.org/10.3847/1538-4357/ad64c4)  
+- **Modifications:** Only published redshifts relevant to this project are included; all other data excluded.
+
+**Reference:**  
+
+> Mao, Y.-Y., Geha, M., Wechsler, R. H., Asali, Y., Wang, Y., Kado-Fong, E., Kallivayalil, N., Nadler, E. O., Tollerud, E. J., Weiner, B., de los Reyes, M. A. C., & Wu, J. F. (2024).  
+> *The SAGA Survey. III. A Census of 101 Satellite Systems around Milky Way–mass Galaxies.*  
+> **The Astrophysical Journal**, 976(1), 117.  
+> [ADS link](https://ui.adsabs.harvard.edu/abs/2024ApJ...976..117M) | [arXiv:2404.14498](https://arxiv.org/abs/2404.14498)
+
+---
+
+### Usage & Citation
+
+- This repository contains **code and derived datasets only**.  
+- **Original surveys must always be cited** when using the included redshift data.  
+- If you use this repository for code or its cleaned dataset, you may cite it via the [`CITATION.cff`](CITATION.cff) file—but this does **not replace citing the original surveys**.
+
 
 ## License
 MIT License - see the [LICENSE](LICENSE) file for details
