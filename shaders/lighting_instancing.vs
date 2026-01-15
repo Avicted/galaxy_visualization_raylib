@@ -27,6 +27,10 @@ void main()
     fragTexCoord = vertexTexCoord;
     fragNormal = normalize(vec3(matNormal * vec4(vertexNormal, 1.0)));
 
+    // Extract per-instance color from unused matrix slots
+    // Color is stored in: m3 (column 0, row 3), m7 (column 1, row 3), m11 (column 2, row 3)
+    fragColor = vec4(instanceTransform[0][3], instanceTransform[1][3], instanceTransform[2][3], 1.0);
+
     // Calculate final vertex position
     gl_Position = mvpi*vec4(vertexPosition, 1.0);
 }

@@ -49,6 +49,7 @@ typedef struct
     bool data_is_loaded;
     bool is_paused;
     bool cursor_enabled;
+    bool show_help;
     Font main_font;
     i32 window_width;
     i32 window_height;
@@ -61,10 +62,12 @@ typedef struct
 
     Shader custom_shader;
     Mesh sphere_mesh;
+    Mesh cube_mesh;
     Model earth_model;
 
     // Batch rendering
     Material material_instance;
+    Material redshift_material;
     Matrix *matrix_transforms_a;
     Matrix *matrix_transforms_b;
 
@@ -336,6 +339,11 @@ app_update(app_state_t *app_state, f64 dt)
         printf("\tis_paused: %s\n", app_state->is_paused ? "true" : "false");
     }
 
+    if (IsKeyPressed(KEY_H))
+    {
+        app_state->show_help = !app_state->show_help;
+    }
+
     rotate_camera_around_origo(app_state, dt);
 
     f64 scroll = GetMouseWheelMove();
@@ -390,153 +398,212 @@ app_render(app_state_t *app_state, f64 dt)
 
     if (app_state->data_to_draw == DRAW_DATA_REDSHIFT && app_state->redshift_galaxy_count > 0)
     {
-        // Draw galaxies as 3D points - much faster than DrawSphere
-        // Use rlPushMatrix/rlPopMatrix for custom point sizes
+        // Draw each galaxy as a simple colored cube - fast and visible
         for (ul i = 0; i < app_state->redshift_galaxy_count; ++i)
         {
+            // Extract position from transformation matrix
             Vector3 pos = {
                 app_state->matrix_transforms_redshift[i].m12,
                 app_state->matrix_transforms_redshift[i].m13,
                 app_state->matrix_transforms_redshift[i].m14};
 
-            // Draw a small cube instead of sphere - much faster
-            f32 size = 0.8f;
-            DrawCube(pos, size, size, size, app_state->redshift_galaxy_colors[i]);
+            // Extract scale from matrix (m0 = scaleX, assumes uniform scale)
+            f32 size = app_state->matrix_transforms_redshift[i].m0;
+            Color base_color = app_state->redshift_galaxy_colors[i];
+
+            // Brighten colors significantly for visibility
+            Color bright_color = {
+                (u8)fmin(255, base_color.r + 80),
+                (u8)fmin(255, base_color.g + 80),
+                (u8)fmin(255, base_color.b + 80),
+                255};
+
+            // Draw as cube - much faster than sphere
+            DrawCube(pos, size, size, size, bright_color);
         }
     }
 
     EndMode3D();
 
     // UI -----------------------------------------------------------------------------
-    u8 font_size = 30;
-    u8 font_spacing = 2;
+    const Color PANEL_BG = {20, 20, 30, 200};
+    const Color PANEL_BORDER = {60, 60, 80, 255};
+    const Color TEXT_DIM = {180, 180, 180, 255};
+    const Color ACCENT_CYAN = {100, 220, 255, 255};
+    const Color ACCENT_ORANGE = {255, 160, 80, 255};
+    const Color ACCENT_GREEN = {100, 255, 150, 255};
+    const Color ACCENT_PURPLE = {200, 130, 255, 255};
 
-    DrawTextEx(
-        app_state->main_font,
-        TextFormat("FPS: %i", GetFPS()), (Vector2){10, 10},
-        font_size,
-        font_spacing,
-        WHITE);
-
-    font_size = 24;
-    font_spacing = 2;
-
-    if (!app_state->is_paused)
+    // Top-left: Current mode and FPS
     {
-        DrawTextEx(
-            app_state->main_font,
-            TextFormat("Scroll to zoom: %.2f", app_state->camera_zoom),
-            (Vector2){10, 50},
-            font_size,
-            font_spacing,
-            WHITE);
+        DrawRectangle(8, 8, 260, 60, PANEL_BG);
+        DrawRectangleLines(8, 8, 260, 60, PANEL_BORDER);
+
+        // Dataset name - shorter names
+        const char *dataset_names[] = {"Real Data", "Uniform", "Both", "Seyfert 3D"};
+        Color dataset_colors[] = {ACCENT_CYAN, ACCENT_ORANGE, WHITE, ACCENT_PURPLE};
+        DrawTextEx(app_state->main_font, dataset_names[app_state->data_to_draw],
+                   (Vector2){16, 12}, 22, 1, dataset_colors[app_state->data_to_draw]);
+
+        // FPS counter
+        DrawTextEx(app_state->main_font, TextFormat("FPS: %d", GetFPS()),
+                   (Vector2){16, 38}, 18, 1, TEXT_DIM);
+
+        // Galaxy count for redshift mode
+        if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
+        {
+            DrawTextEx(app_state->main_font, TextFormat("x%lu", app_state->redshift_galaxy_count),
+                       (Vector2){100, 38}, 18, 1, TEXT_DIM);
+        }
     }
 
-    DrawTextEx(
-        app_state->main_font,
-        TextFormat("Press F11 (ALT + ENTER) to toggle fullscreen"),
-        (Vector2){10, 70},
-        font_size,
-        font_spacing,
-        WHITE);
-
-    DrawTextEx(
-        app_state->main_font,
-        TextFormat("Press 1, 2, 3, or 4 to toggle which data to draw"),
-        (Vector2){10, 90},
-        font_size,
-        font_spacing,
-        WHITE);
-
-    DrawTextEx(
-        app_state->main_font,
-        TextFormat("Red are uniformly distributed"),
-        (Vector2){10, 110},
-        font_size,
-        font_spacing,
-        (Color){255, 128, 0, 255});
-
-    DrawTextEx(
-        app_state->main_font,
-        TextFormat("Blue are real data (flat, no distance)"),
-        (Vector2){10, 130},
-        font_size,
-        font_spacing,
-        (Color){0, 128, 255, 255});
-
-    DrawTextEx(
-        app_state->main_font,
-        TextFormat("Key 4: Seyfert galaxies (3D depth, color = redshift)"),
-        (Vector2){10, 150},
-        font_size,
-        font_spacing,
-        (Color){200, 200, 255, 255});
-
-    if (app_state->is_paused)
+    // Top-right: Mode indicator and color legend
     {
-        DrawTextEx(
-            app_state->main_font,
-            TextFormat("Press WASD (Shift, Space) to move + mouse look"),
-            (Vector2){10, 175},
-            font_size,
-            font_spacing,
-            WHITE);
+        const i32 panel_width = 160;
+        const i32 panel_x = app_state->window_width - panel_width - 8;
 
-        DrawTextEx(
-            app_state->main_font,
-            TextFormat("Press LControl to move slower"),
-            (Vector2){10, 195},
-            font_size,
-            font_spacing,
-            WHITE);
+        // Mode badge
+        const char *mode_text = app_state->is_paused ? "FREE LOOK" : "AUTO";
+        Color mode_color = app_state->is_paused ? ACCENT_PURPLE : ACCENT_GREEN;
+        i32 mode_panel_height = 32;
+
+        DrawRectangle(panel_x, 8, panel_width, mode_panel_height, PANEL_BG);
+        DrawRectangleLines(panel_x, 8, panel_width, mode_panel_height, mode_color);
+        DrawTextEx(app_state->main_font, mode_text,
+                   (Vector2){(f32)(panel_x + 10), 12}, 20, 1, mode_color);
+
+        // Color legend for redshift mode
+        if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
+        {
+            const i32 legend_y = 48;
+            const i32 legend_height = 75;
+
+            DrawRectangle(panel_x, legend_y, panel_width, legend_height, PANEL_BG);
+            DrawRectangleLines(panel_x, legend_y, panel_width, legend_height, PANEL_BORDER);
+
+            DrawTextEx(app_state->main_font, "Velocity",
+                       (Vector2){(f32)(panel_x + 10), (f32)(legend_y + 6)}, 14, 1, TEXT_DIM);
+
+            // Gradient bar
+            const i32 bar_x = panel_x + 10;
+            const i32 bar_y = legend_y + 26;
+            const i32 bar_width = panel_width - 20;
+            const i32 bar_height = 14;
+            const i32 num_segments = 40;
+            const f32 seg_width = (f32)bar_width / (f32)num_segments;
+
+            for (i32 seg = 0; seg < num_segments; seg++)
+            {
+                f64 t = (f64)seg / (f64)(num_segments - 1);
+                Color seg_color;
+
+                if (t < 0.33)
+                {
+                    f64 s = t / 0.33;
+                    seg_color.r = (u8)(100 + s * 155);
+                    seg_color.g = (u8)(255 - s * 25);
+                    seg_color.b = (u8)(255 - s * 200);
+                    seg_color.a = 255;
+                }
+                else if (t < 0.66)
+                {
+                    f64 s = (t - 0.33) / 0.33;
+                    seg_color.r = 255;
+                    seg_color.g = (u8)(230 - s * 100);
+                    seg_color.b = (u8)(55 - s * 35);
+                    seg_color.a = 255;
+                }
+                else
+                {
+                    f64 s = (t - 0.66) / 0.34;
+                    seg_color.r = (u8)(255 - s * 55);
+                    seg_color.g = (u8)(130 - s * 90);
+                    seg_color.b = (u8)(20 - s * 10);
+                    seg_color.a = 255;
+                }
+
+                DrawRectangle((i32)(bar_x + seg * seg_width), bar_y, (i32)(seg_width + 1), bar_height, seg_color);
+            }
+            DrawRectangleLines(bar_x, bar_y, bar_width, bar_height, PANEL_BORDER);
+
+            // Labels
+            DrawTextEx(app_state->main_font, "1k",
+                       (Vector2){(f32)bar_x, (f32)(bar_y + bar_height + 2)}, 12, 1, TEXT_DIM);
+            DrawTextEx(app_state->main_font, "86k",
+                       (Vector2){(f32)(bar_x + bar_width - 22), (f32)(bar_y + bar_height + 2)}, 12, 1, TEXT_DIM);
+        }
     }
 
-    font_size = 30;
-    if (app_state->is_paused)
+    // Bottom center: Mode toggle hint
     {
-        const f64 text_width = MeasureText("Press R again to go back to Auto Look", font_size);
-        DrawTextEx(
-            app_state->main_font,
-            TextFormat("Press R again to go back to Auto Look"),
-            (Vector2){(f32)(app_state->window_width / 2.0f - (f32)text_width + 500.0f / 2.0f), (f32)app_state->window_height - 100.0f},
-            font_size,
-            font_spacing,
-            PURPLE);
+        const char *hint_text = app_state->is_paused ? "R - Return to Auto Orbit" : "R - Enter Free Look";
+        Color hint_color = app_state->is_paused ? ACCENT_PURPLE : ACCENT_GREEN;
+        Vector2 text_size = MeasureTextEx(app_state->main_font, hint_text, 22, 2);
+        f32 hint_x = (app_state->window_width - text_size.x) / 2.0f;
+        f32 hint_y = app_state->window_height - 45.0f;
+
+        DrawRectangle((i32)(hint_x - 12), (i32)(hint_y - 6), (i32)(text_size.x + 24), 36, PANEL_BG);
+        DrawRectangleLines((i32)(hint_x - 12), (i32)(hint_y - 6), (i32)(text_size.x + 24), 36, hint_color);
+        DrawTextEx(app_state->main_font, hint_text, (Vector2){hint_x, hint_y}, 22, 2, hint_color);
+    }
+
+    // Help panel (togglable with H)
+    if (app_state->show_help)
+    {
+        const i32 help_x = 8;
+        const i32 help_y = 76;
+        const i32 help_width = 280;
+        i32 help_height = app_state->is_paused ? 170 : 140;
+
+        DrawRectangle(help_x, help_y, help_width, help_height, PANEL_BG);
+        DrawRectangleLines(help_x, help_y, help_width, help_height, PANEL_BORDER);
+
+        i32 line_y = help_y + 8;
+        const i32 line_spacing = 20;
+
+        DrawTextEx(app_state->main_font, "Controls", (Vector2){(f32)(help_x + 10), (f32)line_y}, 16, 1, WHITE);
+        line_y += line_spacing + 2;
+
+        DrawTextEx(app_state->main_font, "1-4  Dataset", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        line_y += line_spacing;
+        DrawTextEx(app_state->main_font, "R    Camera mode", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        line_y += line_spacing;
+        DrawTextEx(app_state->main_font, "H    Toggle help", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        line_y += line_spacing;
+        DrawTextEx(app_state->main_font, "F11  Fullscreen", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        line_y += line_spacing;
+        DrawTextEx(app_state->main_font, "Scroll  Zoom", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+
+        if (app_state->is_paused)
+        {
+            line_y += line_spacing + 4;
+            DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, ACCENT_PURPLE);
+        }
     }
     else
     {
-        const f64 text_width = MeasureText("Press R to enter Free Look mode", font_size);
-        DrawTextEx(
-            app_state->main_font,
-            "Press R to enter Free Look mode",
-            (Vector2){(f32)(app_state->window_width / 2.0f - (f32)text_width + 500.0f / 2.0f), (f32)app_state->window_height - 100.0f},
-            font_size,
-            font_spacing,
-            GREEN);
+        // Minimal help hint
+        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, 76}, 14, 1, TEXT_DIM);
     }
 
-    font_size = 30;
-    if (app_state->is_paused)
+    // Dataset legend (compact, bottom-left)
     {
-        const char *is_paused_text = "Free Look";
-        DrawTextEx(
-            app_state->main_font,
-            is_paused_text,
-            (Vector2){app_state->window_width - 128.0f - 95.0f, 30},
-            font_size,
-            font_spacing,
-            PURPLE);
-    }
-    else
-    {
-        const char *is_paused_text = "Auto Look";
-        DrawTextEx(
-            app_state->main_font,
-            is_paused_text,
-            (Vector2){app_state->window_width - 64.0f - 128.0f - 32.0f, 30},
-            font_size,
-            font_spacing,
-            GREEN);
+        const i32 legend_x = 8;
+        const i32 legend_y = app_state->window_height - 85;
+        const i32 legend_width = 180;
+        const i32 legend_height = 75;
+
+        DrawRectangle(legend_x, legend_y, legend_width, legend_height, PANEL_BG);
+        DrawRectangleLines(legend_x, legend_y, legend_width, legend_height, PANEL_BORDER);
+
+        DrawTextEx(app_state->main_font, "1 Real (blue)",
+                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 6)}, 14, 1, ACCENT_CYAN);
+        DrawTextEx(app_state->main_font, "2 Uniform",
+                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 22)}, 14, 1, ACCENT_ORANGE);
+        DrawTextEx(app_state->main_font, "3 Both",
+                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 38)}, 14, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "4 Seyfert",
+                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 54)}, 14, 1, ACCENT_PURPLE);
     }
 
     EndDrawing();
@@ -564,6 +631,10 @@ app_cleanup(app_state_t *app_state)
     if (app_state->sphere_mesh.vboId)
     {
         UnloadMesh(app_state->sphere_mesh);
+    }
+    if (app_state->cube_mesh.vboId)
+    {
+        UnloadMesh(app_state->cube_mesh);
     }
     if (app_state->material_instance.shader.id)
     {
@@ -906,6 +977,7 @@ app_init(app_state_t *app_state)
         .data_is_loaded = false,
         .is_paused = false,
         .cursor_enabled = true,
+        .show_help = true,
 
         .data_points_a = NULL,
         .data_points_b = NULL,
@@ -925,7 +997,9 @@ app_init(app_state_t *app_state)
 
         .custom_shader = (Shader){0},
         .material_instance = (Material){0},
+        .redshift_material = (Material){0},
         .sphere_mesh = (Mesh){0},
+        .cube_mesh = (Mesh){0},
         .earth_model = (Model){0},
 
         .matrix_transforms_a = NULL,
@@ -964,6 +1038,7 @@ app_init(app_state_t *app_state)
     app_state->main_font = LoadFontEx("./assets/fonts/retro-pixel-arcade.ttf", 128, 0, 250);
 
     app_state->sphere_mesh = GenMeshSphere(0.2f, 4, 4);
+    app_state->cube_mesh = GenMeshCube(1.0f, 1.0f, 1.0f);
 
     i32 shader_init_result = app_init_shaders(app_state);
     if (shader_init_result != 0)
@@ -1117,12 +1192,13 @@ initialize_transforms_redshift_data(app_state_t *app_state)
         app_state->matrix_transforms_redshift[i] = MatrixIdentity();
 
         // Scale based on magnitude - brighter galaxies (lower magnitude) appear larger
-        f64 magnitude_scale = 0.15;
+        // Small scale for point-like appearance
+        f64 magnitude_scale = 0.6;
         if (galaxy->b_magnitude > 0.0 && galaxy->b_magnitude < 20.0)
         {
-            // Scale factor: brighter = larger (magnitude 12 -> scale ~0.2, magnitude 17 -> scale ~0.1)
-            magnitude_scale = 0.3 / (galaxy->b_magnitude / 12.0);
-            magnitude_scale = fmax(0.05, fmin(magnitude_scale, 0.3));
+            // Scale factor: brighter = larger (magnitude 12 -> scale ~0.8, magnitude 17 -> scale ~0.4)
+            magnitude_scale = 1.0 / (galaxy->b_magnitude / 12.0);
+            magnitude_scale = fmax(0.3, fmin(magnitude_scale, 1.2));
         }
 
         app_state->matrix_transforms_redshift[i] = MatrixMultiply(
@@ -1244,6 +1320,22 @@ app_init_shaders(app_state_t *app_state)
         app_state->material_instance = galaxy_material;
         app_state->material_instance.shader = app_state->custom_shader;
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
+    }
+
+    // Redshift material - simpler, uses a warm orange color for all galaxies
+    {
+        Material redshift_mat = LoadMaterialDefault();
+        redshift_mat.shader = app_state->custom_shader;
+
+        // Use same textures as main material
+        redshift_mat.maps[MATERIAL_MAP_DIFFUSE].texture = app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].texture;
+        redshift_mat.maps[MATERIAL_MAP_SPECULAR].texture = app_state->material_instance.maps[MATERIAL_MAP_SPECULAR].texture;
+
+        // Set a warm orange-yellow color to represent the average redshift
+        redshift_mat.maps[MATERIAL_MAP_DIFFUSE].color = (Color){255, 180, 80, 255};
+        redshift_mat.maps[MATERIAL_MAP_SPECULAR].value = 0.5f;
+
+        app_state->redshift_material = redshift_mat;
     }
 
     return 0;
