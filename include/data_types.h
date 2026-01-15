@@ -48,6 +48,8 @@
 #define SPHERE_MESH_RADIUS 0.25f
 #define SPHERE_MESH_RINGS 4
 #define SPHERE_MESH_SLICES 4
+#define SPHERE_LOWPOLY_RINGS 3
+#define SPHERE_LOWPOLY_SLICES 3
 #define CUBE_MESH_SIZE 1.0f
 #define EARTH_SCALE 1.0f
 #define EARTH_MODEL_SCALE 0.01f
@@ -170,8 +172,7 @@ typedef struct
     Vector3 camera_direction;
 
     Shader custom_shader;
-    Mesh sphere_mesh;
-    Mesh cube_mesh;
+    Mesh sphere_mesh_lowpoly;
     Model earth_model;
 
     Material material_instance;

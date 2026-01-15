@@ -55,30 +55,42 @@ i32 transforms_init_course_data(app_state_t *app_state)
 {
     for (ul i = 0; i < app_state->data_point_count; ++i)
     {
+        // Dataset A transforms
         {
             const f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / ARCMIN_TO_DEGREES) * DEG2RAD;
             const f64 declination_rad = (app_state->data_points_a[i].declination / ARCMIN_TO_DEGREES) * DEG2RAD;
             const f64 radius = COURSE_DATA_RADIUS;
-            const f64 x = radius * cos(right_ascension_rad) * cos(declination_rad);
+            const f64 cos_dec = cos(declination_rad);
+            const f64 x = radius * cos(right_ascension_rad) * cos_dec;
             const f64 y = radius * sin(declination_rad);
-            const f64 z = radius * sin(right_ascension_rad) * cos(declination_rad);
+            const f64 z = radius * sin(right_ascension_rad) * cos_dec;
 
-            app_state->matrix_transforms_a[i] = MatrixIdentity();
-            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE));
-            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate((f32)x, (f32)y, (f32)z));
+            // Build transform directly instead of multiple matrix multiplies
+            Matrix transform = MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE);
+            transform.m12 = (f32)x;
+            transform.m13 = (f32)y;
+            transform.m14 = (f32)z;
+
+            app_state->matrix_transforms_a[i] = transform;
         }
 
+        // Dataset B transforms
         {
             const f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / ARCMIN_TO_DEGREES) * DEG2RAD;
             const f64 declination_rad = (app_state->data_points_b[i].declination / ARCMIN_TO_DEGREES) * DEG2RAD;
             const f64 radius = COURSE_DATA_RADIUS;
-            const f64 x = radius * cos(right_ascension_rad) * cos(declination_rad);
+            const f64 cos_dec = cos(declination_rad);
+            const f64 x = radius * cos(right_ascension_rad) * cos_dec;
             const f64 y = radius * sin(declination_rad);
-            const f64 z = radius * sin(right_ascension_rad) * cos(declination_rad);
+            const f64 z = radius * sin(right_ascension_rad) * cos_dec;
 
-            app_state->matrix_transforms_b[i] = MatrixIdentity();
-            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE));
-            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate((f32)x, (f32)y, (f32)z));
+            // Build transform directly instead of multiple matrix multiplies
+            Matrix transform = MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE);
+            transform.m12 = (f32)x;
+            transform.m13 = (f32)y;
+            transform.m14 = (f32)z;
+
+            app_state->matrix_transforms_b[i] = transform;
         }
     }
 

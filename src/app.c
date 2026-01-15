@@ -169,8 +169,7 @@ i32 app_init(app_state_t *app_state)
 
     app_state->main_font = LoadFontEx("./assets/fonts/Perfect DOS VGA 437.ttf", FONT_LOAD_SIZE, 0, FONT_GLYPH_COUNT);
 
-    app_state->sphere_mesh = GenMeshSphere(SPHERE_MESH_RADIUS, SPHERE_MESH_RINGS, SPHERE_MESH_SLICES);
-    app_state->cube_mesh = GenMeshCube(CUBE_MESH_SIZE, CUBE_MESH_SIZE, CUBE_MESH_SIZE);
+    app_state->sphere_mesh_lowpoly = GenMeshSphere(SPHERE_MESH_RADIUS, SPHERE_LOWPOLY_RINGS, SPHERE_LOWPOLY_SLICES);
 
     if (shaders_init(app_state) != 0)
     {
@@ -208,13 +207,9 @@ void app_cleanup(app_state_t *app_state)
     {
         UnloadModel(app_state->earth_model);
     }
-    if (app_state->sphere_mesh.vboId)
+    if (app_state->sphere_mesh_lowpoly.vboId)
     {
-        UnloadMesh(app_state->sphere_mesh);
-    }
-    if (app_state->cube_mesh.vboId)
-    {
-        UnloadMesh(app_state->cube_mesh);
+        UnloadMesh(app_state->sphere_mesh_lowpoly);
     }
     if (app_state->material_instance.shader.id)
     {
