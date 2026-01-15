@@ -84,6 +84,10 @@
 #define FPS_SMOOTHING_ALPHA 0.1
 #define FPS_UPDATE_INTERVAL 0.5f
 
+// Camera clip planes
+#define CAMERA_NEAR_PLANE 0.1
+#define CAMERA_FAR_PLANE 5000.0
+
 // Shader/Light constants
 #define LIGHT_POSITION_X 1000.0f
 #define LIGHT_POSITION_Y 1000.0f

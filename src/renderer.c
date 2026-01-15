@@ -1,9 +1,11 @@
 #include "renderer.h"
 #include "ui.h"
 #include "includes.h"
+#include "rlgl.h"
 
 void renderer_draw_3d(app_state_t *app_state)
 {
+    rlSetClipPlanes(CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
     BeginMode3D(app_state->main_camera);
 
     Vector3 earth_pos = {0.0f, 0.0f, 0.0f};
