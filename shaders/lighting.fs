@@ -8,14 +8,12 @@ in vec4 fragColor;
 
 // Input uniform values
 uniform sampler2D texture0;     // Diffuse texture
-uniform sampler2D specularMap;  // Specular map
 uniform vec4 colDiffuse;
-uniform float shininess;        // Shininess (exponent for specular reflection)
 
 // Output fragment color
 out vec4 finalColor;
 
-#define     MAX_LIGHTS              8
+#define     MAX_LIGHTS              4
 #define     LIGHT_DIRECTIONAL       0
 #define     LIGHT_POINT             1
 
@@ -34,65 +32,32 @@ uniform vec3 viewPos;
 
 void main()
 {
-    // Use per-instance color if provided (non-zero), otherwise use texture
-    vec4 baseColor;
-    if (fragColor.r > 0.01 || fragColor.g > 0.01 || fragColor.b > 0.01)
-    {
-        // Per-instance color provided - use it directly
-        baseColor = fragColor;
-    }
-    else
-    {
-        // No per-instance color - use diffuse texture
-        baseColor = texture(texture0, fragTexCoord);
-    }
-    
-    // Fetch specular map value
-    vec3 specularMapColor = texture(specularMap, fragTexCoord).rgb;
+    // Branchless color selection: use instance color if luminance > threshold, else texture
+    float instanceLuminance = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
+    float useInstance = step(0.01, instanceLuminance);
+    vec4 texColor = texture(texture0, fragTexCoord);
+    vec4 baseColor = mix(texColor, fragColor, useInstance);
 
-    // Lighting and specular setup
-    vec3 lightDot = vec3(0.0);
+    // Simplified lighting - single directional light calculation
     vec3 normal = normalize(fragNormal);
-    vec3 viewD = normalize(viewPos - fragPosition);
-    vec3 specular = vec3(0.0);
+    vec3 lightDot = vec3(0.0);
 
-    for (int i = 0; i < MAX_LIGHTS; i++)
+    // Unrolled loop for first light only (most common case)
+    if (lights[0].enabled == 1)
     {
-        if (lights[i].enabled == 1)
-        {
-            vec3 lightDir = vec3(0.0);
-
-            if (lights[i].type == LIGHT_DIRECTIONAL)
-            {
-                lightDir = -normalize(lights[i].target - lights[i].position);
-            }
-
-            if (lights[i].type == LIGHT_POINT)
-            {
-                lightDir = normalize(lights[i].position - fragPosition);
-            }
-
-            // Diffuse lighting
-            float NdotL = max(dot(normal, lightDir), 0.0);
-            lightDot += lights[i].color.rgb * NdotL;
-        }
+        vec3 lightDir = (lights[0].type == LIGHT_DIRECTIONAL)
+            ? -normalize(lights[0].target - lights[0].position)
+            : normalize(lights[0].position - fragPosition);
+        lightDot = lights[0].color.rgb * max(dot(normal, lightDir), 0.0);
     }
 
-    // For per-instance colored objects, use simpler lighting to preserve color
-    if (fragColor.r > 0.01 || fragColor.g > 0.01 || fragColor.b > 0.01)
-    {
-        // Simpler lighting that preserves the instance color better
-        float brightness = max(0.4, (lightDot.r + lightDot.g + lightDot.b) / 3.0);
-        finalColor = baseColor * brightness;
-        finalColor.a = 1.0;
-    }
-    else
-    {
-        // Original lighting for textured objects
-        finalColor = (baseColor * (colDiffuse + vec4(specular, 1.0)) * vec4(lightDot, 1.0));
-        finalColor += baseColor * (ambient / 2.0) * colDiffuse;
-    }
-
-    // Gamma correction
-    finalColor = pow(finalColor, vec4(1.0 / 2.2));
+    // Branchless lighting blend
+    float brightness = max(0.4, (lightDot.r + lightDot.g + lightDot.b) * 0.333);
+    vec4 instanceResult = baseColor * brightness;
+    instanceResult.a = 1.0;
+    
+    vec4 texturedResult = baseColor * colDiffuse * vec4(lightDot, 1.0);
+    texturedResult += baseColor * (ambient * 0.5) * colDiffuse;
+    
+    finalColor = mix(texturedResult, instanceResult, useInstance);
 }

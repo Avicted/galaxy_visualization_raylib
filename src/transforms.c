@@ -121,7 +121,19 @@ i32 transforms_init_redshift_data(app_state_t *app_state)
             app_state->matrix_transforms_redshift[i],
             MatrixTranslate((f32)x, (f32)y, (f32)z));
 
-        app_state->redshift_galaxy_colors[i] = transforms_color_from_velocity(galaxy->helio_velocity);
+        Color color = transforms_color_from_velocity(galaxy->helio_velocity);
+        // Apply brightness boost
+        color.r = (u8)fmin(255, color.r + COLOR_BRIGHTNESS_BOOST);
+        color.g = (u8)fmin(255, color.g + COLOR_BRIGHTNESS_BOOST);
+        color.b = (u8)fmin(255, color.b + COLOR_BRIGHTNESS_BOOST);
+        app_state->redshift_galaxy_colors[i] = color;
+
+        // Encode color into matrix for GPU instancing
+        // Use m1, m2, m4 - these are off-diagonal rotation elements (zero in scale+translate)
+        // Raylib Matrix is row-major: m1=[row0,col1], m2=[row0,col2], m4=[row1,col0]
+        app_state->matrix_transforms_redshift[i].m1 = (f32)color.r / 255.0f;
+        app_state->matrix_transforms_redshift[i].m2 = (f32)color.g / 255.0f;
+        app_state->matrix_transforms_redshift[i].m4 = (f32)color.b / 255.0f;
     }
 
     return 0;

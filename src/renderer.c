@@ -37,24 +37,12 @@ void renderer_draw_3d(app_state_t *app_state)
 
     if (app_state->data_to_draw == DRAW_DATA_REDSHIFT && app_state->redshift_galaxy_count > 0)
     {
-        for (ul i = 0; i < app_state->redshift_galaxy_count; ++i)
-        {
-            Vector3 pos = {
-                app_state->matrix_transforms_redshift[i].m12,
-                app_state->matrix_transforms_redshift[i].m13,
-                app_state->matrix_transforms_redshift[i].m14};
-
-            f32 size = app_state->matrix_transforms_redshift[i].m0;
-            Color base_color = app_state->redshift_galaxy_colors[i];
-
-            Color bright_color = {
-                (u8)fmin(255, base_color.r + COLOR_BRIGHTNESS_BOOST),
-                (u8)fmin(255, base_color.g + COLOR_BRIGHTNESS_BOOST),
-                (u8)fmin(255, base_color.b + COLOR_BRIGHTNESS_BOOST),
-                255};
-
-            DrawCube(pos, size, size, size, bright_color);
-        }
+        // Use standard instanced rendering - colors are encoded in matrix slots
+        DrawMeshInstanced(
+            app_state->sphere_mesh,
+            app_state->material_instance,
+            app_state->matrix_transforms_redshift,
+            app_state->redshift_galaxy_count);
     }
 
     EndMode3D();

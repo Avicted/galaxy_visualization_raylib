@@ -27,9 +27,11 @@ void main()
     fragTexCoord = vertexTexCoord;
     fragNormal = normalize(vec3(matNormal * vec4(vertexNormal, 1.0)));
 
-    // Extract per-instance color from unused matrix slots
-    // Color is stored in: m3 (column 0, row 3), m7 (column 1, row 3), m11 (column 2, row 3)
-    fragColor = vec4(instanceTransform[0][3], instanceTransform[1][3], instanceTransform[2][3], 1.0);
+    // Extract per-instance color from matrix slots m1, m2, m4
+    // Raylib stores matrix as 16 floats row-by-row: m0,m1,m2,m3,m4,...
+    // GLSL mat4[col][row] reads those same 16 floats column-by-column
+    // So: m1 -> [0][1], m2 -> [0][2], m4 -> [1][0]
+    fragColor = vec4(instanceTransform[0][1], instanceTransform[0][2], instanceTransform[1][0], 1.0);
 
     // Calculate final vertex position
     gl_Position = mvpi*vec4(vertexPosition, 1.0);

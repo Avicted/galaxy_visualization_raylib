@@ -12,7 +12,8 @@ internal i32
 app_init_platform(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    // SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
 
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
 
