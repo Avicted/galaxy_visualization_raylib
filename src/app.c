@@ -8,7 +8,7 @@
 #include "includes.h"
 #include "macros.h"
 
-static void
+internal void
 app_update(app_state_t *app_state, f64 dt)
 {
     camera_handle_resize(app_state);

@@ -1,15 +1,15 @@
 #include "ui.h"
 #include "utils.h"
 
-static const Color PANEL_BG = {20, 20, 30, 200};
-static const Color PANEL_BORDER = {60, 60, 80, 255};
-static const Color TEXT_DIM = {180, 180, 180, 255};
-static const Color ACCENT_BLUE = {64, 64, 255, 255};
-static const Color ACCENT_RED = {255, 64, 64, 255};
-static const Color ACCENT_GREEN = {100, 255, 64, 255};
-static const Color ACCENT_PURPLE = {255, 64, 255, 255};
+global_variable const Color PANEL_BG = {20, 20, 30, 200};
+global_variable const Color PANEL_BORDER = {60, 60, 80, 255};
+global_variable const Color TEXT_DIM = {180, 180, 180, 255};
+global_variable const Color ACCENT_BLUE = {64, 64, 255, 255};
+global_variable const Color ACCENT_RED = {255, 64, 64, 255};
+global_variable const Color ACCENT_GREEN = {100, 255, 64, 255};
+global_variable const Color ACCENT_PURPLE = {255, 64, 255, 255};
 
-static void
+internal void
 ui_draw_info_panel(app_state_t *app_state)
 {
     const i32 panel_w = UI_INFO_PANEL_WIDTH;
@@ -39,7 +39,7 @@ ui_draw_info_panel(app_state_t *app_state)
                (Vector2){16, 74}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 }
 
-static void
+internal void
 ui_draw_mode_indicator(app_state_t *app_state)
 {
     const i32 panel_width = UI_MODE_PANEL_WIDTH;
@@ -113,7 +113,7 @@ ui_draw_mode_indicator(app_state_t *app_state)
     }
 }
 
-static void
+internal void
 ui_draw_bottom_hint(app_state_t *app_state)
 {
     const char *hint_text = app_state->is_paused ? "R - Return to Auto Orbit" : "R - Enter Free Look";
@@ -127,7 +127,7 @@ ui_draw_bottom_hint(app_state_t *app_state)
     DrawTextEx(app_state->main_font, hint_text, (Vector2){hint_x, hint_y}, FONT_SIZE_LARGE, 2, hint_color);
 }
 
-static void
+internal void
 ui_draw_help_panel(app_state_t *app_state)
 {
     const i32 help_x = UI_PANEL_MARGIN;
@@ -169,7 +169,7 @@ ui_draw_help_panel(app_state_t *app_state)
     }
 }
 
-static void
+internal void
 ui_draw_dataset_legend(app_state_t *app_state)
 {
     const i32 legend_x = UI_PANEL_MARGIN;
