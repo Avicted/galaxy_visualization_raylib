@@ -12,11 +12,11 @@ The students must leverage the GPU for these calculations on their own using a s
 - The expected runtime for the calculation is approximately 3 seconds.
     - It is possible to optimize the runtime to 0.85 seconds on a single GPU (my own solution tested with one AMD RX 6900 XT).
 - **This program is a visualization of the data, not the solution to the assignment.**
-
+- Redshift data is sourced from: [Harvard University](https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat) and visualized in 3D space with colors based on redshift values.
 
 ## Prerequisites
 
-This project can be built using clang through build.sh (raylib is the only dependency) or use Meson as the build system.
+This project can be built using clang/gcc through build.sh (raylib is the only dependency) or use Meson as the build system.
 
 
 ## Dependencies
@@ -74,14 +74,16 @@ chmod +x ./build.sh
 ./build/galaxy_visualization_raylib
 ```
 
-##  Demo
+## Examples
 
-![demo](assets/images/galaxy_demo_optimized.gif "galaxy_demo_optimized.gif")
+![real_data](assets/images/real_data.png "real_data.png")
+![real_data](assets/images/redshift_data.png "redshift_data.png")
 
 ---
-
-![screen](assets/images/screenshot.png "screenshot.png")
 
 ## Data sources
 - Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
 - Redshift data: https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat
+
+## License
+MIT License - see the [LICENSE](LICENSE) file for details
