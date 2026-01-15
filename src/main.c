@@ -453,8 +453,8 @@ app_render(app_state_t *app_state, f64 dt)
 
     // Top-left: Current mode and FPS
     {
-        const i32 panel_w = 260;
-        const i32 panel_h = 78;
+        const i32 panel_w = 280;
+        const i32 panel_h = 90;
         DrawRectangle(8, 8, panel_w, panel_h, PANEL_BG);
         DrawRectangleLines(8, 8, panel_w, panel_h, PANEL_BORDER);
 
@@ -466,48 +466,48 @@ app_render(app_state_t *app_state, f64 dt)
 
         // FPS counter on its own line
         DrawTextEx(app_state->main_font, TextFormat("FPS: %.0f", app_state->fps_smoothed),
-                   (Vector2){16, 38}, 18, 1, TEXT_DIM);
+                   (Vector2){16, 42}, 18, 1, TEXT_DIM);
 
         // Galaxy count for redshift mode on a new line to avoid overlap
         if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
         {
             DrawTextEx(app_state->main_font, TextFormat("Galaxies: %lu", app_state->redshift_galaxy_count),
-                       (Vector2){16, 58}, 16, 1, TEXT_DIM);
+                       (Vector2){16, 64}, 18, 1, TEXT_DIM);
         }
     }
 
     // Top-right: Mode indicator and color legend
     {
-        const i32 panel_width = 160;
+        const i32 panel_width = 200;
         const i32 panel_x = app_state->window_width - panel_width - 8;
 
         // Mode badge
         const char *mode_text = app_state->is_paused ? "FREE LOOK" : "AUTO";
         Color mode_color = app_state->is_paused ? ACCENT_PURPLE : ACCENT_GREEN;
-        i32 mode_panel_height = 32;
+        i32 mode_panel_height = 40;
 
         DrawRectangle(panel_x, 8, panel_width, mode_panel_height, PANEL_BG);
         DrawRectangleLines(panel_x, 8, panel_width, mode_panel_height, mode_color);
         DrawTextEx(app_state->main_font, mode_text,
-                   (Vector2){(f32)(panel_x + 10), 12}, 20, 1, mode_color);
+                   (Vector2){(f32)(panel_x + 12), 12}, 20, 1, mode_color);
 
         // Color legend for redshift mode
         if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
         {
-            const i32 legend_y = 48;
-            const i32 legend_height = 75;
+            const i32 legend_y = 52;
+            const i32 legend_height = 110;
 
             DrawRectangle(panel_x, legend_y, panel_width, legend_height, PANEL_BG);
             DrawRectangleLines(panel_x, legend_y, panel_width, legend_height, PANEL_BORDER);
 
-            DrawTextEx(app_state->main_font, "Velocity",
-                       (Vector2){(f32)(panel_x + 10), (f32)(legend_y + 6)}, 14, 1, TEXT_DIM);
+            DrawTextEx(app_state->main_font, "Velocity (km/s)",
+                       (Vector2){(f32)(panel_x + 10), (f32)(legend_y + 8)}, 18, 1, TEXT_DIM);
 
             // Gradient bar
             const i32 bar_x = panel_x + 10;
-            const i32 bar_y = legend_y + 26;
+            const i32 bar_y = legend_y + 32;
             const i32 bar_width = panel_width - 20;
-            const i32 bar_height = 14;
+            const i32 bar_height = 16;
             const i32 num_segments = 40;
             const f32 seg_width = (f32)bar_width / (f32)num_segments;
 
@@ -547,9 +547,9 @@ app_render(app_state_t *app_state, f64 dt)
 
             // Labels
             DrawTextEx(app_state->main_font, "1k",
-                       (Vector2){(f32)bar_x, (f32)(bar_y + bar_height + 2)}, 12, 1, TEXT_DIM);
+                       (Vector2){(f32)bar_x, (f32)(bar_y + bar_height + 4)}, 18, 1, TEXT_DIM);
             DrawTextEx(app_state->main_font, "86k",
-                       (Vector2){(f32)(bar_x + bar_width - 22), (f32)(bar_y + bar_height + 2)}, 12, 1, TEXT_DIM);
+                       (Vector2){(f32)(bar_x + bar_width - 30), (f32)(bar_y + bar_height + 4)}, 18, 1, TEXT_DIM);
         }
     }
 
@@ -559,70 +559,70 @@ app_render(app_state_t *app_state, f64 dt)
         Color hint_color = app_state->is_paused ? ACCENT_PURPLE : ACCENT_GREEN;
         Vector2 text_size = MeasureTextEx(app_state->main_font, hint_text, 22, 2);
         f32 hint_x = (app_state->window_width - text_size.x) / 2.0f;
-        f32 hint_y = app_state->window_height - 45.0f;
+        f32 hint_y = app_state->window_height - 50.0f;
 
-        DrawRectangle((i32)(hint_x - 12), (i32)(hint_y - 6), (i32)(text_size.x + 24), 36, PANEL_BG);
-        DrawRectangleLines((i32)(hint_x - 12), (i32)(hint_y - 6), (i32)(text_size.x + 24), 36, hint_color);
+        DrawRectangle((i32)(hint_x - 12), (i32)(hint_y - 8), (i32)(text_size.x + 24), 40, PANEL_BG);
+        DrawRectangleLines((i32)(hint_x - 12), (i32)(hint_y - 8), (i32)(text_size.x + 24), 40, hint_color);
         DrawTextEx(app_state->main_font, hint_text, (Vector2){hint_x, hint_y}, 22, 2, hint_color);
     }
 
     // Help panel (togglable with H)
     const i32 help_x = 8;
-    const i32 help_y = 90;
+    const i32 help_y = 96;
     if (app_state->show_help)
     {
-        const i32 help_width = 280;
-        i32 help_height = app_state->is_paused ? 170 : 140;
+        const i32 help_width = 320;
+        i32 help_height = app_state->is_paused ? 220 : 190;
 
         DrawRectangle(help_x, help_y, help_width, help_height, PANEL_BG);
         DrawRectangleLines(help_x, help_y, help_width, help_height, PANEL_BORDER);
 
-        i32 line_y = help_y + 8;
-        const i32 line_spacing = 20;
+        i32 line_y = help_y + 10;
+        const i32 line_spacing = 24;
 
-        DrawTextEx(app_state->main_font, "Controls", (Vector2){(f32)(help_x + 10), (f32)line_y}, 16, 1, WHITE);
-        line_y += line_spacing + 2;
+        DrawTextEx(app_state->main_font, "Controls", (Vector2){(f32)(help_x + 12), (f32)line_y}, 20, 2, WHITE);
+        line_y += line_spacing + 4;
 
-        DrawTextEx(app_state->main_font, "1-4  Dataset", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "1-4  Dataset", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
         line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "R    Camera mode", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "R    Camera mode", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
         line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "H    Toggle help", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "H    Toggle help", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
         line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "F11  Fullscreen", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "F11  Fullscreen", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
         line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "Scroll  Zoom", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "Scroll  Zoom", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
 
         if (app_state->is_paused)
         {
-            line_y += line_spacing + 4;
-            DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space", (Vector2){(f32)(help_x + 10), (f32)line_y}, 14, 1, ACCENT_PURPLE);
+            line_y += line_spacing + 6;
+            DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, ACCENT_PURPLE);
         }
     }
     else
     {
         // Minimal help hint
-        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, help_y}, 14, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, help_y}, 18, 1, TEXT_DIM);
     }
 
     // Dataset legend (compact, bottom-left)
     {
         const i32 legend_x = 8;
-        const i32 legend_y = app_state->window_height - 85;
-        const i32 legend_width = 180;
-        const i32 legend_height = 75;
+        const i32 legend_y = app_state->window_height - 105;
+        const i32 legend_width = 200;
+        const i32 legend_height = 95;
 
         DrawRectangle(legend_x, legend_y, legend_width, legend_height, PANEL_BG);
         DrawRectangleLines(legend_x, legend_y, legend_width, legend_height, PANEL_BORDER);
 
         DrawTextEx(app_state->main_font, "1 Real (blue)",
-                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 6)}, 14, 1, ACCENT_CYAN);
+                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 8)}, 18, 1, ACCENT_CYAN);
         DrawTextEx(app_state->main_font, "2 Uniform",
-                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 22)}, 14, 1, ACCENT_ORANGE);
+                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 28)}, 18, 1, ACCENT_ORANGE);
         DrawTextEx(app_state->main_font, "3 Both",
-                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 38)}, 14, 1, TEXT_DIM);
+                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 48)}, 18, 1, TEXT_DIM);
         DrawTextEx(app_state->main_font, "4 Seyfert",
-                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 54)}, 14, 1, ACCENT_PURPLE);
+                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 68)}, 18, 1, ACCENT_PURPLE);
     }
 
     EndDrawing();
@@ -658,15 +658,6 @@ app_cleanup(app_state_t *app_state)
     if (app_state->material_instance.shader.id)
     {
         UnloadShader(app_state->material_instance.shader);
-    }
-
-    if (app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].texture.id)
-    {
-        UnloadTexture(app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].texture);
-    }
-    if (app_state->material_instance.maps[MATERIAL_MAP_SPECULAR].texture.id)
-    {
-        UnloadTexture(app_state->material_instance.maps[MATERIAL_MAP_SPECULAR].texture);
     }
 
     if (app_state->main_font.texture.id)
@@ -1311,30 +1302,20 @@ app_init_shaders(app_state_t *app_state)
         f64 diffuse_value[4] = {1.0, 1.0, 1.0, 1.0};
         SetShaderValue(app_state->custom_shader, color_diffuse_loc, &diffuse_value, SHADER_UNIFORM_VEC4);
 
-        // The sun shining on the earth
+        // Single directional light for the Earth model
         CreateLight(LIGHT_DIRECTIONAL, (Vector3){1000.0f, 1000.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
-
-        // @Note(Victor): We add more lights to the scene to better show the colors of the galaxies
-        CreateLight(LIGHT_DIRECTIONAL, (Vector3){-1000.0f, -1000.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
-        CreateLight(LIGHT_DIRECTIONAL, (Vector3){0.0f, 0.0f, 1000.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
-        CreateLight(LIGHT_DIRECTIONAL, (Vector3){0.0f, 0.0f, -1000.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
-
-        // We also add a poi32 light at the center of the earth
-        CreateLight(LIGHT_POINT, (Vector3){0.0f, 0.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
     }
 
-    // Material
+    // Material - simple solid color, no textures needed for small galaxy spheres
     {
         Material galaxy_material = LoadMaterialDefault();
         galaxy_material.shader = app_state->custom_shader;
 
-        galaxy_material.maps[MATERIAL_MAP_DIFFUSE].texture = LoadTexture("./assets/images/galaxy_test_texture_diffuse.png");
-        galaxy_material.maps[MATERIAL_MAP_SPECULAR].texture = LoadTexture("./assets/images/galaxy_test_texture_specular.png");
-
+        // No textures - solid colors are sufficient for tiny spheres
         galaxy_material.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
-        galaxy_material.maps[MATERIAL_MAP_SPECULAR].value = 1.0f;
+        galaxy_material.maps[MATERIAL_MAP_SPECULAR].value = 0.0f;
 
-        f32 shininess = 32.0f;
+        f32 shininess = 1.0f;
         SetShaderValue(galaxy_material.shader, GetShaderLocation(galaxy_material.shader, "shininess"), &shininess, SHADER_UNIFORM_FLOAT);
 
         app_state->material_instance = galaxy_material;
@@ -1342,18 +1323,14 @@ app_init_shaders(app_state_t *app_state)
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
     }
 
-    // Redshift material - simpler, uses a warm orange color for all galaxies
+    // Redshift material - simple solid color
     {
         Material redshift_mat = LoadMaterialDefault();
         redshift_mat.shader = app_state->custom_shader;
 
-        // Use same textures as main material
-        redshift_mat.maps[MATERIAL_MAP_DIFFUSE].texture = app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].texture;
-        redshift_mat.maps[MATERIAL_MAP_SPECULAR].texture = app_state->material_instance.maps[MATERIAL_MAP_SPECULAR].texture;
-
         // Set a warm orange-yellow color to represent the average redshift
         redshift_mat.maps[MATERIAL_MAP_DIFFUSE].color = (Color){255, 180, 80, 255};
-        redshift_mat.maps[MATERIAL_MAP_SPECULAR].value = 0.5f;
+        redshift_mat.maps[MATERIAL_MAP_SPECULAR].value = 0.0f;
 
         app_state->redshift_material = redshift_mat;
     }

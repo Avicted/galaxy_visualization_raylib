@@ -89,7 +89,6 @@ chmod +x ./build.sh
 
 # TODO
 - The redshift mode is drawing "570" over the FPS counter. Fix that.
-
 - Do we really need lights? Optimization?
 - Remove the galaxy textures?
 - Improve the galaxy rendering (point sprites? / plane billboards?)
