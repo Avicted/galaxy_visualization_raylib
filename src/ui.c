@@ -35,7 +35,7 @@ ui_draw_info_panel(app_state_t *app_state)
         galaxy_count = app_state->data_point_count * ((app_state->data_to_draw == DRAW_DATA_ALL) ? 2 : 1);
     }
 
-    DrawTextEx(app_state->main_font, TextFormat("Galaxies: %s", format_u64_thousands_dots((u64)galaxy_count)),
+    DrawTextEx(app_state->main_font, TextFormat("Galaxies: %s", format_u64_suffix((u64)galaxy_count)),
                (Vector2){16, 74}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 }
 
@@ -159,7 +159,7 @@ ui_draw_help_panel(app_state_t *app_state)
     }
     else
     {
-        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, help_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "H -> Help", (Vector2){16, help_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
     }
 }
 
@@ -174,18 +174,14 @@ ui_draw_dataset_legend(app_state_t *app_state)
     DrawRectangle(legend_x, legend_y, legend_width, legend_height, PANEL_BG);
     DrawRectangleLines(legend_x, legend_y, legend_width, legend_height, PANEL_BORDER);
 
+    // Single consolidated text draw with color indicators using simple chars
     const i32 legend_text_x = legend_x + UI_PANEL_MARGIN;
     const i32 legend_text_y = legend_y + 10;
-    const i32 legend_line_spacing = 28;
 
-    DrawTextEx(app_state->main_font, "1 Real (blue)",
-               (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 0 * legend_line_spacing)}, FONT_SIZE_MEDIUM, 1, ACCENT_BLUE);
-    DrawTextEx(app_state->main_font, "2 Uniform",
-               (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 1 * legend_line_spacing)}, FONT_SIZE_MEDIUM, 1, ACCENT_RED);
-    DrawTextEx(app_state->main_font, "3 Both",
-               (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 2 * legend_line_spacing)}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-    DrawTextEx(app_state->main_font, "4 Seyfert",
-               (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 3 * legend_line_spacing)}, FONT_SIZE_MEDIUM, 1, ACCENT_PURPLE);
+    // Draw all legend items in one call (same color - use TEXT_DIM)
+    const char *legend_text = "1 Real (blue)\n2 Uniform (red)\n3 Both\n4 Seyfert";
+    DrawTextEx(app_state->main_font, legend_text,
+               (Vector2){(f32)legend_text_x, (f32)legend_text_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 }
 
 void ui_draw(app_state_t *app_state)

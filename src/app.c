@@ -135,7 +135,7 @@ i32 app_init(app_state_t *app_state)
     app_state->window_height = INITIAL_WINDOW_HEIGHT;
     app_state->debug = prev_debug;
     app_state->cursor_enabled = true;
-    app_state->show_help = true;
+    app_state->show_help = false; // Hidden by default for better performance
 
     app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     app_state->main_camera.fovy = CAMERA_FOV;

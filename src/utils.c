@@ -3,35 +3,62 @@
 #include "includes.h"
 
 const char *
-format_u64_thousands_dots(u64 value)
+format_u64_suffix(u64 value)
 {
     local_persist char buffers[4][32];
     local_persist i32 buffer_index = 0;
 
     char *buf = buffers[buffer_index++ & 3];
-    char *out = buf + 31;
-    *out = '\0';
 
-    if (value == 0)
+    const char *suffixes[] = {"", "k", "M", "B", "T", "P", "E"};
+    const u64 thresholds[] = {
+        1,
+        1000,
+        1000000,
+        1000000000,
+        1000000000000ULL,
+        1000000000000000ULL,
+        1000000000000000000ULL,
+    };
+
+    i32 scale = 0;
+    while (scale < 6 && value >= thresholds[scale + 1])
     {
-        *--out = '0';
-        return out;
+        scale++;
     }
 
-    i32 group = 0;
-    while (value > 0)
+    if (scale == 0)
     {
-        if (group == 3)
+        snprintf(buf, 32, "%llu", (unsigned long long)value);
+        return buf;
+    }
+
+    u64 denom = thresholds[scale];
+    u64 whole = value / denom;
+    u64 rem = value % denom;
+
+    // Show one decimal for values < 10 in scaled unit (e.g. 1.2k, 2.5M)
+    if (whole < 10)
+    {
+        u64 decimal = (rem * 10) / denom;
+        if (decimal > 0)
         {
-            *--out = '.';
-            group = 0;
+            snprintf(buf, 32, "%llu.%llu%s",
+                     (unsigned long long)whole,
+                     (unsigned long long)decimal,
+                     suffixes[scale]);
         }
-        *--out = (char)('0' + (value % 10));
-        value /= 10;
-        group++;
+        else
+        {
+            snprintf(buf, 32, "%llu%s", (unsigned long long)whole, suffixes[scale]);
+        }
+    }
+    else
+    {
+        snprintf(buf, 32, "%llu%s", (unsigned long long)whole, suffixes[scale]);
     }
 
-    return out;
+    return buf;
 }
 
 void print_memory_usage(app_state_t *app_state)
