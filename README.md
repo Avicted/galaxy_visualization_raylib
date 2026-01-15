@@ -92,6 +92,6 @@ chmod +x ./build.sh
 - Do we really need lights? Optimization?
 - Remove the galaxy textures?
 - Improve the galaxy rendering (point sprites? / plane billboards?)
+- Refactor logging to be cleaner and use only 3 significant digits.
 
 - Refactor the code to be cleaner in separate files. With a clean main.c entry point.
-- Refactor logging to be cleaner and use only 3 significant digits.
