@@ -6,6 +6,7 @@ project('galaxy_visualization_raylib', 'c',
     #'buildtype=debug',
     #'optimization=0',
     #'c_args=-ggdb',
+    
     'buildtype=release',
     'optimization=3',
 
@@ -13,6 +14,7 @@ project('galaxy_visualization_raylib', 'c',
     'c_args=-Wall',
     'c_args=-Wextra',
     'c_args=-Werror',
+    'c_args=-Wpedantic',
   ]
 )
 
