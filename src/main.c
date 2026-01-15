@@ -107,6 +107,8 @@ internal inline void handle_window_resize(app_state_t *app_state);
 internal inline void rotate_camera_around_origo(app_state_t *app_state, f64 dt);
 internal void print_memory_usage(app_state_t *app_state);
 
+internal const char *format_u64_thousands_dots(u64 value);
+
 i32 main(i32 argc, char **argv)
 {
     app_state_t *app_state = (app_state_t *)calloc(1, sizeof(app_state_t));
@@ -371,6 +373,41 @@ app_update(app_state_t *app_state, f64 dt)
     }
 }
 
+internal const char *
+format_u64_thousands_dots(u64 value)
+{
+    // Returns a pointer to a static buffer (rotating) containing "100.000"-style formatting.
+    local_persist char buffers[4][32];
+    local_persist i32 buffer_index = 0;
+
+    char *buf = buffers[buffer_index++ & 3];
+
+    char *out = buf + 31;
+    *out = '\0';
+
+    if (value == 0)
+    {
+        *--out = '0';
+        return out;
+    }
+
+    i32 group = 0;
+    while (value > 0)
+    {
+        if (group == 3)
+        {
+            *--out = '.';
+            group = 0;
+        }
+
+        *--out = (char)('0' + (value % 10));
+        value /= 10;
+        group++;
+    }
+
+    return out;
+}
+
 internal void
 app_render(app_state_t *app_state, f64 dt)
 {
@@ -453,8 +490,8 @@ app_render(app_state_t *app_state, f64 dt)
 
     // Top-left: Current mode and FPS
     {
-        const i32 panel_w = 280;
-        const i32 panel_h = 90;
+        const i32 panel_w = 340;
+        const i32 panel_h = 100;
         DrawRectangle(8, 8, panel_w, panel_h, PANEL_BG);
         DrawRectangleLines(8, 8, panel_w, panel_h, PANEL_BORDER);
 
@@ -462,34 +499,41 @@ app_render(app_state_t *app_state, f64 dt)
         const char *dataset_names[] = {"Real Data", "Uniform", "Both", "Seyfert 3D"};
         Color dataset_colors[] = {ACCENT_CYAN, ACCENT_ORANGE, WHITE, ACCENT_PURPLE};
         DrawTextEx(app_state->main_font, dataset_names[app_state->data_to_draw],
-                   (Vector2){16, 12}, 22, 1, dataset_colors[app_state->data_to_draw]);
+                   (Vector2){16, 12}, 32, 1, dataset_colors[app_state->data_to_draw]);
 
         // FPS counter on its own line
         DrawTextEx(app_state->main_font, TextFormat("FPS: %.0f", app_state->fps_smoothed),
-                   (Vector2){16, 42}, 18, 1, TEXT_DIM);
+                   (Vector2){16, 52}, 24, 1, TEXT_DIM);
 
         // Galaxy count for redshift mode on a new line to avoid overlap
+        ul galaxy_count = 0UL;
         if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
         {
-            DrawTextEx(app_state->main_font, TextFormat("Galaxies: %lu", app_state->redshift_galaxy_count),
-                       (Vector2){16, 64}, 18, 1, TEXT_DIM);
+            galaxy_count = app_state->redshift_galaxy_count;
         }
+        else if (app_state->data_to_draw == DRAW_DATA_A || app_state->data_to_draw == DRAW_DATA_B || app_state->data_to_draw == DRAW_DATA_ALL)
+        {
+            galaxy_count = app_state->data_point_count * ((app_state->data_to_draw == DRAW_DATA_ALL) ? 2 : 1);
+        }
+
+        DrawTextEx(app_state->main_font, TextFormat("Galaxies: %s", format_u64_thousands_dots((u64)galaxy_count)),
+                   (Vector2){16, 74}, 24, 1, TEXT_DIM);
     }
 
     // Top-right: Mode indicator and color legend
     {
-        const i32 panel_width = 200;
+        const i32 panel_width = 260;
         const i32 panel_x = app_state->window_width - panel_width - 8;
 
         // Mode badge
-        const char *mode_text = app_state->is_paused ? "FREE LOOK" : "AUTO";
+        const char *mode_text = app_state->is_paused ? "Free Look" : "Auto";
         Color mode_color = app_state->is_paused ? ACCENT_PURPLE : ACCENT_GREEN;
-        i32 mode_panel_height = 40;
+        i32 mode_panel_height = 32;
 
         DrawRectangle(panel_x, 8, panel_width, mode_panel_height, PANEL_BG);
         DrawRectangleLines(panel_x, 8, panel_width, mode_panel_height, mode_color);
         DrawTextEx(app_state->main_font, mode_text,
-                   (Vector2){(f32)(panel_x + 12), 12}, 20, 1, mode_color);
+                   (Vector2){(f32)(panel_x + 12), 12}, 24, 1, mode_color);
 
         // Color legend for redshift mode
         if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
@@ -501,11 +545,11 @@ app_render(app_state_t *app_state, f64 dt)
             DrawRectangleLines(panel_x, legend_y, panel_width, legend_height, PANEL_BORDER);
 
             DrawTextEx(app_state->main_font, "Velocity (km/s)",
-                       (Vector2){(f32)(panel_x + 10), (f32)(legend_y + 8)}, 18, 1, TEXT_DIM);
+                       (Vector2){(f32)(panel_x + 10), (f32)(legend_y + 8)}, 24, 1, TEXT_DIM);
 
             // Gradient bar
             const i32 bar_x = panel_x + 10;
-            const i32 bar_y = legend_y + 32;
+            const i32 bar_y = legend_y + 40;
             const i32 bar_width = panel_width - 20;
             const i32 bar_height = 16;
             const i32 num_segments = 40;
@@ -547,9 +591,9 @@ app_render(app_state_t *app_state, f64 dt)
 
             // Labels
             DrawTextEx(app_state->main_font, "1k",
-                       (Vector2){(f32)bar_x, (f32)(bar_y + bar_height + 4)}, 18, 1, TEXT_DIM);
+                       (Vector2){(f32)bar_x, (f32)(bar_y + bar_height + 8)}, 24, 1, TEXT_DIM);
             DrawTextEx(app_state->main_font, "86k",
-                       (Vector2){(f32)(bar_x + bar_width - 30), (f32)(bar_y + bar_height + 4)}, 18, 1, TEXT_DIM);
+                       (Vector2){(f32)(bar_x + bar_width - 40), (f32)(bar_y + bar_height + 8)}, 24, 1, TEXT_DIM);
         }
     }
 
@@ -557,22 +601,22 @@ app_render(app_state_t *app_state, f64 dt)
     {
         const char *hint_text = app_state->is_paused ? "R - Return to Auto Orbit" : "R - Enter Free Look";
         Color hint_color = app_state->is_paused ? ACCENT_PURPLE : ACCENT_GREEN;
-        Vector2 text_size = MeasureTextEx(app_state->main_font, hint_text, 22, 2);
+        Vector2 text_size = MeasureTextEx(app_state->main_font, hint_text, 24, 2);
         f32 hint_x = (app_state->window_width - text_size.x) / 2.0f;
         f32 hint_y = app_state->window_height - 50.0f;
 
         DrawRectangle((i32)(hint_x - 12), (i32)(hint_y - 8), (i32)(text_size.x + 24), 40, PANEL_BG);
         DrawRectangleLines((i32)(hint_x - 12), (i32)(hint_y - 8), (i32)(text_size.x + 24), 40, hint_color);
-        DrawTextEx(app_state->main_font, hint_text, (Vector2){hint_x, hint_y}, 22, 2, hint_color);
+        DrawTextEx(app_state->main_font, hint_text, (Vector2){hint_x, hint_y}, 24, 2, hint_color);
     }
 
     // Help panel (togglable with H)
     const i32 help_x = 8;
-    const i32 help_y = 96;
+    const i32 help_y = 120;
     if (app_state->show_help)
     {
-        const i32 help_width = 320;
-        i32 help_height = app_state->is_paused ? 220 : 190;
+        const i32 help_width = 340;
+        i32 help_height = app_state->is_paused ? 200 : 170;
 
         DrawRectangle(help_x, help_y, help_width, help_height, PANEL_BG);
         DrawRectangleLines(help_x, help_y, help_width, help_height, PANEL_BORDER);
@@ -580,49 +624,53 @@ app_render(app_state_t *app_state, f64 dt)
         i32 line_y = help_y + 10;
         const i32 line_spacing = 24;
 
-        DrawTextEx(app_state->main_font, "Controls", (Vector2){(f32)(help_x + 12), (f32)line_y}, 20, 2, WHITE);
+        DrawTextEx(app_state->main_font, "Controls", (Vector2){(f32)(help_x + 12), (f32)line_y}, 24, 2, WHITE);
         line_y += line_spacing + 4;
 
-        DrawTextEx(app_state->main_font, "1-4  Dataset", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "1-4  Dataset", (Vector2){(f32)(help_x + 12), (f32)line_y}, 24, 1, TEXT_DIM);
         line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "R    Camera mode", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "R    Camera mode", (Vector2){(f32)(help_x + 12), (f32)line_y}, 24, 1, TEXT_DIM);
         line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "H    Toggle help", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "H    Toggle help", (Vector2){(f32)(help_x + 12), (f32)line_y}, 24, 1, TEXT_DIM);
         line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "F11  Fullscreen", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "F11  Fullscreen", (Vector2){(f32)(help_x + 12), (f32)line_y}, 24, 1, TEXT_DIM);
         line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "Scroll  Zoom", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "Scroll  Zoom", (Vector2){(f32)(help_x + 12), (f32)line_y}, 24, 1, TEXT_DIM);
 
         if (app_state->is_paused)
         {
             line_y += line_spacing + 6;
-            DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space", (Vector2){(f32)(help_x + 12), (f32)line_y}, 18, 1, ACCENT_PURPLE);
+            DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space", (Vector2){(f32)(help_x + 12), (f32)line_y}, 24, 1, ACCENT_PURPLE);
         }
     }
     else
     {
         // Minimal help hint
-        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, help_y}, 18, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, help_y}, 24, 1, TEXT_DIM);
     }
 
     // Dataset legend (compact, bottom-left)
     {
         const i32 legend_x = 8;
-        const i32 legend_y = app_state->window_height - 105;
-        const i32 legend_width = 200;
-        const i32 legend_height = 95;
+        const i32 legend_width = 240;
+        const i32 legend_height = 130;
+        const i32 legend_y = app_state->window_height - legend_height - 8;
 
         DrawRectangle(legend_x, legend_y, legend_width, legend_height, PANEL_BG);
         DrawRectangleLines(legend_x, legend_y, legend_width, legend_height, PANEL_BORDER);
 
+        const i32 legend_text_x = legend_x + 8;
+        const i32 legend_text_y = legend_y + 10;
+        const i32 legend_line_spacing = 28;
+
         DrawTextEx(app_state->main_font, "1 Real (blue)",
-                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 8)}, 18, 1, ACCENT_CYAN);
+                   (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 0 * legend_line_spacing)}, 24, 1, ACCENT_CYAN);
         DrawTextEx(app_state->main_font, "2 Uniform",
-                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 28)}, 18, 1, ACCENT_ORANGE);
+                   (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 1 * legend_line_spacing)}, 24, 1, ACCENT_ORANGE);
         DrawTextEx(app_state->main_font, "3 Both",
-                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 48)}, 18, 1, TEXT_DIM);
+                   (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 2 * legend_line_spacing)}, 24, 1, TEXT_DIM);
         DrawTextEx(app_state->main_font, "4 Seyfert",
-                   (Vector2){(f32)(legend_x + 8), (f32)(legend_y + 68)}, 18, 1, ACCENT_PURPLE);
+                   (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 3 * legend_line_spacing)}, 24, 1, ACCENT_PURPLE);
     }
 
     EndDrawing();
@@ -1046,7 +1094,8 @@ app_init(app_state_t *app_state)
         return 1;
     }
 
-    app_state->main_font = LoadFontEx("./assets/fonts/retro-pixel-arcade.ttf", 128, 0, 250);
+    // app_state->main_font = LoadFontEx("./assets/fonts/retro-pixel-arcade.ttf", 128, 0, 250);
+    app_state->main_font = LoadFontEx("./assets/fonts/Perfect DOS VGA 437.ttf", 128, 0, 250);
 
     app_state->sphere_mesh = GenMeshSphere(0.2f, 4, 4);
     app_state->cube_mesh = GenMeshCube(1.0f, 1.0f, 1.0f);
