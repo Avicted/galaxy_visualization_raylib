@@ -114,7 +114,7 @@ i32 main(i32 argc, char **argv)
     app_state_t *app_state = (app_state_t *)calloc(1, sizeof(app_state_t));
     if (app_state == NULL)
     {
-        printf("Error allocating memory for app_state!\n");
+        fprintf(stderr, "[ERROR] Failed to allocate app_state\n");
         return 1;
     }
 
@@ -123,7 +123,7 @@ i32 main(i32 argc, char **argv)
     i32 app_init_result = app_init(app_state);
     if (app_init_result != 0)
     {
-        fprintf(stderr, "ERROR: app_init failed.\n");
+        fprintf(stderr, "[ERROR] Initialization failed\n");
         return 1;
     }
 
@@ -139,8 +139,7 @@ parse_input_args(app_state_t *app_state, i32 argc, char **argv)
 {
     if (argc == 1)
     {
-        printf("\tNo input args OK!\n");
-        printf("\tCurrent working directory: %s\n", GetWorkingDirectory());
+        printf("[INFO]  Working directory: %s\n", GetWorkingDirectory());
         return;
     }
 
@@ -148,7 +147,7 @@ parse_input_args(app_state_t *app_state, i32 argc, char **argv)
     {
         if (strcmp(argv[i], "GALAXY_DEBUG") == 0)
         {
-            printf("\tRunning in DEBUG mode!\n");
+            printf("[INFO]  Debug mode enabled\n");
             app_state->debug = true;
         }
     }
@@ -339,7 +338,7 @@ app_update(app_state_t *app_state, f64 dt)
     if (IsKeyPressed(KEY_R))
     {
         app_state->is_paused = !app_state->is_paused;
-        printf("\tis_paused: %s\n", app_state->is_paused ? "true" : "false");
+        printf("[DEBUG] Paused: %s\n", app_state->is_paused ? "yes" : "no");
     }
 
     if (IsKeyPressed(KEY_H))
@@ -679,8 +678,7 @@ app_render(app_state_t *app_state, f64 dt)
 internal void
 print_memory_usage(app_state_t *app_state)
 {
-    printf("\n\tMemory used in GB: %f\n", (f64)app_state->cpu_memory_allocated / (f64)Gigabytes(1));
-    printf("\tMemory used in MB: %f\n", (f64)app_state->cpu_memory_allocated / (f64)Megabytes(1));
+    printf("[INFO]  Memory: %.3f MB\n", (f64)app_state->cpu_memory_allocated / (f64)Megabytes(1));
 }
 
 internal void
@@ -749,7 +747,7 @@ app_cleanup(app_state_t *app_state)
         app_state->cpu_memory_allocated -= app_state->redshift_galaxy_count * sizeof(Color);
     }
 
-    printf("\nMemory usage at the end of the program:");
+    printf("[INFO]  Cleanup complete\n");
     print_memory_usage(app_state);
 
     ASSERT(app_state->cpu_memory_allocated == 0);
@@ -765,7 +763,7 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
     FILE *file = fopen(file_name, "r");
     if (file == NULL)
     {
-        fprintf(stderr, "Error opening file: %s\n", file_name);
+        fprintf(stderr, "[ERROR] Cannot open: %s\n", file_name);
         return -1;
     }
 
@@ -773,7 +771,7 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
 
     if (fgets(line, sizeof(line), file) == NULL)
     {
-        fprintf(stderr, "Error reading header from %s\n", file_name);
+        fprintf(stderr, "[ERROR] Cannot read header: %s\n", file_name);
         fclose(file);
         return -1;
     }
@@ -797,7 +795,7 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
         f64 ra = strtod(p, &endptr);
         if (endptr == p)
         {
-            fprintf(stderr, "Parse error (RA) on line %lu in %s: '%s'\n", (ul)i + 2, file_name, line);
+            fprintf(stderr, "[ERROR] Parse RA failed at line %lu: %s\n", (ul)i + 2, file_name);
             fclose(file);
             return -1;
         }
@@ -811,7 +809,7 @@ read_input_data_from_file(const char *file_name, arcmin_data_t *data_points_loca
         f64 dec = strtod(p, &endptr);
         if (endptr == p)
         {
-            fprintf(stderr, "Parse error (DEC) on line %lu in %s: '%s'\n", (ul)i + 2, file_name, line);
+            fprintf(stderr, "[ERROR] Parse DEC failed at line %lu: %s\n", (ul)i + 2, file_name);
             fclose(file);
             return -1;
         }
@@ -901,7 +899,7 @@ read_redshift_data_from_file(const char *file_name, redshift_galaxy_t *galaxies,
     FILE *file = fopen(file_name, "r");
     if (file == NULL)
     {
-        fprintf(stderr, "Error opening redshift file: %s\n", file_name);
+        fprintf(stderr, "[ERROR] Cannot open: %s\n", file_name);
         return 0;
     }
 
@@ -1022,7 +1020,7 @@ read_redshift_data_from_file(const char *file_name, redshift_galaxy_t *galaxies,
     }
 
     fclose(file);
-    printf("\tLoaded %lu redshift galaxies from %s\n", galaxy_count, file_name);
+    printf("[INFO]  Loaded %lu redshift galaxies\n", galaxy_count);
     return galaxy_count;
 }
 
@@ -1076,23 +1074,23 @@ app_init(app_state_t *app_state)
     i32 app_read_input_data_result = app_read_input_data(app_state);
     if (app_read_input_data_result != 0)
     {
-        fprintf(stderr, "ERROR: Could not perform app_read_input_data.\n");
+        fprintf(stderr, "[ERROR] Failed to read input data\n");
         return 1;
     }
 
-    printf("\tHello from raylib_galaxy_application!\n\n");
+    printf("[INFO]  Galaxy Visualization initialized\n");
 
     i32 matrix_gpu_upload_result = upload_matrix_transforms_to_gpu(app_state);
     if (matrix_gpu_upload_result != 0)
     {
-        fprintf(stderr, "ERROR: Could not upload matrix transforms to the GPU.\n");
+        fprintf(stderr, "[ERROR] Failed to upload transforms to GPU\n");
         return 1;
     }
 
     i32 platform_init_result = app_init_platform(app_state);
     if (platform_init_result != 0)
     {
-        fprintf(stderr, "ERROR: Could not initialize the platform API (Raylib)\n");
+        fprintf(stderr, "[ERROR] Failed to initialize platform\n");
         return 1;
     }
 
@@ -1105,11 +1103,10 @@ app_init(app_state_t *app_state)
     i32 shader_init_result = app_init_shaders(app_state);
     if (shader_init_result != 0)
     {
-        fprintf(stderr, "ERROR: Could not initialize the shader(s)\n");
+        fprintf(stderr, "[ERROR] Failed to initialize shaders\n");
         return 1;
     }
 
-    printf("\n\tMemory usage before we start the main program loop\n");
     print_memory_usage(app_state);
 
     app_state->earth_model = LoadModel("./assets/Earth_1_12756.glb");
@@ -1125,7 +1122,7 @@ app_read_input_data(app_state_t *app_state)
     app_state->data_points_a = (arcmin_data_t *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data_t));
     if (app_state->data_points_a == NULL)
     {
-        fprintf(stderr, "Error allocating memory for data_points_a!\n");
+        fprintf(stderr, "[ERROR] Alloc failed: data_points_a\n");
         return 1;
     }
     app_state->cpu_memory_allocated += (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
@@ -1133,7 +1130,7 @@ app_read_input_data(app_state_t *app_state)
     app_state->data_points_b = (arcmin_data_t *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data_t));
     if (app_state->data_points_b == NULL)
     {
-        fprintf(stderr, "Error allocating memory for data_points_b!\n");
+        fprintf(stderr, "[ERROR] Alloc failed: data_points_b\n");
         free(app_state->data_points_a);
         app_state->cpu_memory_allocated -= (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
         app_state->data_points_a = NULL;
@@ -1144,27 +1141,27 @@ app_read_input_data(app_state_t *app_state)
     usize count_a = read_input_data_from_file(data_a_filename, app_state->data_points_a, MAX_DATA_POINTS);
     if (count_a < 0)
     {
-        fprintf(stderr, "Failed reading %s\n", data_a_filename);
+        fprintf(stderr, "[ERROR] Read failed: %s\n", data_a_filename);
         return 1;
     }
 
     usize count_b = read_input_data_from_file(data_b_filename, app_state->data_points_b, MAX_DATA_POINTS);
     if (count_b < 0)
     {
-        fprintf(stderr, "Failed reading %s\n", data_b_filename);
+        fprintf(stderr, "[ERROR] Read failed: %s\n", data_b_filename);
         return 1;
     }
 
     if ((usize)count_a != (usize)count_b)
     {
-        fprintf(stderr, "Warning: datasets A and B have different row counts: %zd vs %zd\n", count_a, count_b);
+        fprintf(stderr, "[WARN]  Dataset count mismatch: %zd vs %zd\n", count_a, count_b);
     }
 
-    app_state->data_point_count = (ul)MIN((usize)count_a, (usize)count_b); // store the actual amount available
+    app_state->data_point_count = (ul)MIN((usize)count_a, (usize)count_b);
 
     if (app_state->data_point_count == 0)
     {
-        fprintf(stderr, "No data loaded from files.\n");
+        fprintf(stderr, "[ERROR] No data loaded\n");
         return 1;
     }
 
@@ -1172,7 +1169,7 @@ app_read_input_data(app_state_t *app_state)
     app_state->redshift_galaxies = (redshift_galaxy_t *)calloc(MAX_REDSHIFT_GALAXIES, sizeof(redshift_galaxy_t));
     if (app_state->redshift_galaxies == NULL)
     {
-        fprintf(stderr, "Error allocating memory for redshift_galaxies!\n");
+        fprintf(stderr, "[ERROR] Alloc failed: redshift_galaxies\n");
         return 1;
     }
     app_state->cpu_memory_allocated += (usize)MAX_REDSHIFT_GALAXIES * sizeof(redshift_galaxy_t);
@@ -1182,11 +1179,11 @@ app_read_input_data(app_state_t *app_state)
 
     if (app_state->redshift_galaxy_count == 0)
     {
-        fprintf(stderr, "Warning: No redshift galaxies loaded from %s\n", redshift_data_filename);
+        fprintf(stderr, "[WARN]  No redshift galaxies loaded\n");
     }
     else
     {
-        printf("\tSuccessfully loaded %lu redshift galaxies with 3D depth information\n", app_state->redshift_galaxy_count);
+        printf("[INFO]  Redshift galaxies ready with 3D depth\n");
     }
 
     app_state->data_is_loaded = true;
@@ -1283,7 +1280,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     app_state->matrix_transforms_a = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
     if (app_state->matrix_transforms_a == NULL)
     {
-        fprintf(stderr, "ERROR: Could not allocate matrix_transforms_a.\n");
+        fprintf(stderr, "[ERROR] Alloc failed: matrix_transforms_a\n");
         return 1;
     }
     app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
@@ -1291,7 +1288,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     app_state->matrix_transforms_b = (Matrix *)calloc(MAX_DATA_POINTS, sizeof(Matrix));
     if (app_state->matrix_transforms_b == NULL)
     {
-        fprintf(stderr, "ERROR: Could not allocate matrix_transforms_b.\n");
+        fprintf(stderr, "[ERROR] Alloc failed: matrix_transforms_b\n");
         return 1;
     }
     app_state->cpu_memory_allocated += MAX_DATA_POINTS * sizeof(Matrix);
@@ -1299,7 +1296,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
     i32 course_data_init_result = initialize_transforms_course_data(app_state);
     if (course_data_init_result != 0)
     {
-        fprintf(stderr, "ERROR: Could not initialize course data matrix transforms.\n");
+        fprintf(stderr, "[ERROR] Transform init failed: course data\n");
         return 1;
     }
 
@@ -1309,7 +1306,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
         app_state->matrix_transforms_redshift = (Matrix *)calloc(app_state->redshift_galaxy_count, sizeof(Matrix));
         if (app_state->matrix_transforms_redshift == NULL)
         {
-            fprintf(stderr, "ERROR: Could not allocate matrix_transforms_redshift.\n");
+            fprintf(stderr, "[ERROR] Alloc failed: matrix_transforms_redshift\n");
             return 1;
         }
         app_state->cpu_memory_allocated += app_state->redshift_galaxy_count * sizeof(Matrix);
@@ -1318,7 +1315,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
         app_state->redshift_galaxy_colors = (Color *)calloc(app_state->redshift_galaxy_count, sizeof(Color));
         if (app_state->redshift_galaxy_colors == NULL)
         {
-            fprintf(stderr, "ERROR: Could not allocate redshift_galaxy_colors.\n");
+            fprintf(stderr, "[ERROR] Alloc failed: redshift_galaxy_colors\n");
             return 1;
         }
         app_state->cpu_memory_allocated += app_state->redshift_galaxy_count * sizeof(Color);
@@ -1326,7 +1323,7 @@ upload_matrix_transforms_to_gpu(app_state_t *app_state)
         i32 redshift_data_init_result = initialize_transforms_redshift_data(app_state);
         if (redshift_data_init_result != 0)
         {
-            fprintf(stderr, "ERROR: Could not initialize redshift data matrix transforms.\n");
+            fprintf(stderr, "[ERROR] Transform init failed: redshift data\n");
             return 1;
         }
     }
