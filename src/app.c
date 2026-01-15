@@ -8,6 +8,39 @@
 #include "includes.h"
 #include "macros.h"
 
+#ifdef EMBED_ASSETS
+#include "embedded_assets.h"
+
+// Embedded asset buffers for model loading callback
+static unsigned char *g_embedded_model_data = NULL;
+static size_t g_embedded_model_size = 0;
+static size_t g_embedded_model_offset = 0;
+
+// Custom file loader callback for embedded assets
+static unsigned char *embedded_load_file_data(const char *fileName, int *dataSize)
+{
+    // Check if this is the earth model we're trying to load
+    if (strstr(fileName, "Earth") != NULL || strstr(fileName, "earth") != NULL ||
+        strstr(fileName, ".glb") != NULL || strstr(fileName, ".GLB") != NULL)
+    {
+        if (g_embedded_model_data != NULL && g_embedded_model_size > 0)
+        {
+            // Return a copy of the embedded data (raylib will free it)
+            unsigned char *data = (unsigned char *)RL_MALLOC(g_embedded_model_size);
+            if (data != NULL)
+            {
+                memcpy(data, g_embedded_model_data, g_embedded_model_size);
+                *dataSize = (int)g_embedded_model_size;
+                return data;
+            }
+        }
+    }
+    // Fall back to default loader for other files
+    *dataSize = 0;
+    return NULL;
+}
+#endif
+
 internal i32
 app_init_platform(app_state_t *app_state)
 {
@@ -15,7 +48,22 @@ app_init_platform(app_state_t *app_state)
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
 
+#ifdef EMBED_ASSETS
+    {
+        unsigned char *icon_data = NULL;
+        size_t icon_size = 0;
+        EMBEDDED_DECOMPRESS(icon_app, &icon_data, &icon_size);
+        if (icon_data != NULL)
+        {
+            Image icon = LoadImageFromMemory(".png", icon_data, (int)icon_size);
+            SetWindowIcon(icon);
+            UnloadImage(icon);
+            free(icon_data);
+        }
+    }
+#else
     SetWindowIcon(LoadImage("./assets/images/app_icon.png"));
+#endif
 
     return 0;
 }
@@ -165,7 +213,24 @@ i32 app_init(app_state_t *app_state)
         return 1;
     }
 
+#ifdef EMBED_ASSETS
+    {
+        unsigned char *font_data = NULL;
+        size_t font_size = 0;
+        EMBEDDED_DECOMPRESS(font_perfect_dos, &font_data, &font_size);
+        if (font_data != NULL)
+        {
+            app_state->main_font = LoadFontFromMemory(".ttf", font_data, (int)font_size, FONT_LOAD_SIZE, NULL, FONT_GLYPH_COUNT);
+            free(font_data);
+        }
+        else
+        {
+            fprintf(stderr, "[ERROR] Failed to decompress embedded font\n");
+        }
+    }
+#else
     app_state->main_font = LoadFontEx("./assets/fonts/Perfect DOS VGA 437.ttf", FONT_LOAD_SIZE, 0, FONT_GLYPH_COUNT);
+#endif
 
     app_state->sphere_mesh_lowpoly = GenMeshSphere(SPHERE_MESH_RADIUS, SPHERE_LOWPOLY_RINGS, SPHERE_LOWPOLY_SLICES);
 
@@ -183,7 +248,27 @@ i32 app_init(app_state_t *app_state)
 
     print_memory_usage(app_state);
 
+#ifdef EMBED_ASSETS
+    {
+        // Decompress model data and set up callback for raylib to load it
+        EMBEDDED_DECOMPRESS(model_earth, &g_embedded_model_data, &g_embedded_model_size);
+        if (g_embedded_model_data != NULL)
+        {
+            SetLoadFileDataCallback(embedded_load_file_data);
+            app_state->earth_model = LoadModel("embedded://earth.glb");
+            SetLoadFileDataCallback(NULL);
+            free(g_embedded_model_data);
+            g_embedded_model_data = NULL;
+            g_embedded_model_size = 0;
+        }
+        else
+        {
+            fprintf(stderr, "[ERROR] Failed to decompress embedded earth model\n");
+        }
+    }
+#else
     app_state->earth_model = LoadModel("./assets/Earth_1_12756_optimized.glb");
+#endif
     Matrix earth_scale_matrix = MatrixScale(EARTH_MODEL_SCALE, EARTH_MODEL_SCALE, EARTH_MODEL_SCALE);
     app_state->earth_model.transform = MatrixMultiply(app_state->earth_model.transform, earth_scale_matrix);
 

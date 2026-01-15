@@ -1,0 +1,1 @@
+option('embed_assets', type: 'boolean', value: false, description: 'Embed all assets into the binary for single-file distribution')

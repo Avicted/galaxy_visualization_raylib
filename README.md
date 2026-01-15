@@ -26,6 +26,7 @@ This project can be built using clang/gcc through build.sh (raylib is the only d
 - **Raylib** (Tested with v5.5-1)
 - **Clang**  (or GCC)
 - **Meson**  (optional)
+- **Python3** (optional, for embedded build compression)
 - **gdb**    (optional)
 
 ## Installation Commands
@@ -33,46 +34,73 @@ This project can be built using clang/gcc through build.sh (raylib is the only d
 ### Arch Linux
 
 ```bash
-sudo pacman -S raylib base-devel meson git clang
+sudo pacman -S raylib base-devel meson git clang python
 ```
 
 ### Ubuntu
 
 ```bash
-sudo apt-get install -y raylib build-essential meson git clang
+sudo apt-get install -y raylib build-essential meson git clang python3
 ```
 
-### Build and Run the Project
+## Building
 
-You can choose from one of the following build systems:
-- Meson (F5 in VSCode)
-- build.sh
+You can choose between two build modes:
+- **Normal build**: External asset files (45 KB binary + ~8 MB assets)
+- **Embedded build**: Single portable binary with all assets compressed (~6 MB)
 
+### Using build.sh
 
-### Meson
 ```bash
-# Setup
-meson setup build --buildtype=release 
+# Make executable
+chmod +x ./build.sh
 
-# Build
+# Normal build (with external assets)
+./build.sh
+
+# Embedded build (single portable binary)
+./build.sh --embed
+
+# Build and run
+./build.sh --run
+./build.sh --embed --run
+
+# Clean and rebuild
+./build.sh --clean
+
+# Show all options
+./build.sh --help
+```
+
+### Using Meson
+
+```bash
+# Normal build
+meson setup build
 meson compile -C build
-
-# Run
 ./build/galaxy_visualization_raylib
+
+# Embedded build (single portable binary)
+meson setup build_embedded -Dembed_assets=true
+meson compile -C build_embedded
+./build_embedded/galaxy_visualization_raylib  # Can run from anywhere!
 
 # Clean
 meson compile -C build --clean
 ```
 
-### Bash
-```bash
-# Build
-chmod +x ./build.sh
-./build.sh
+### Build Options
 
-# Run
-./build/galaxy_visualization_raylib
-```
+| Option | Description | Binary Size |
+|--------|-------------|-------------|
+| Normal | External assets required | ~45 KB |
+| Embedded (`--embed` or `-Dembed_assets=true`) | All assets compressed into binary | ~6 MB |
+
+The embedded binary includes:
+- Fonts, shaders, and 3D models
+- All galaxy data (100k points × 2 datasets)
+- Redshift survey data (Seyfert + SAGA DR3)
+- Compressed with zlib (~40-50% compression ratio for text data)
 
 ## Examples
 

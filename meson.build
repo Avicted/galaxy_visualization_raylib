@@ -20,25 +20,21 @@ project('galaxy_visualization_raylib', 'c',
 
 raylib_dep = dependency('raylib', required: true)
 
-inc_dir = include_directories('include', 'src')
+embed_assets = get_option('embed_assets')
+extra_c_args = []
 
-# Unity build: single translation unit for faster compilation
+# Generate embedded asset headers at configure time
+if embed_assets
+  message('EMBED_ASSETS enabled - generating embedded headers...')
+  run_command('scripts/generate_embedded.sh', meson.project_build_root() / 'embedded', check: true)
+  extra_c_args += ['-DEMBED_ASSETS', '-I' + meson.project_build_root()]
+endif
+
+inc_dir = include_directories('include', 'src', 'vendor')
+
 sources = [
     'src/unity_build.c',
 ]
-
-# Individual sources (use instead of unity_build.c if needed for debugging):
-# sources = [
-#     'src/main.c',
-#     'src/app.c',
-#     'src/camera.c',
-#     'src/data_loader.c',
-#     'src/renderer.c',
-#     'src/shaders.c',
-#     'src/transforms.c',
-#     'src/ui.c',
-#     'src/utils.c',
-# ]
 
 exe = executable(
     'galaxy_visualization_raylib', 
@@ -46,7 +42,7 @@ exe = executable(
     dependencies: raylib_dep,
     c_args: [
       '-march=native',
-    ],
+    ] + extra_c_args,
     link_args : [
       '-lm',
     ],
