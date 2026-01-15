@@ -147,19 +147,13 @@ ui_draw_help_panel(app_state_t *app_state)
         DrawTextEx(app_state->main_font, "Controls", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 2, WHITE);
         line_y += line_spacing + 4;
 
-        DrawTextEx(app_state->main_font, "1-4  Dataset", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-        line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "R    Camera mode", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-        line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "H    Toggle help", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-        line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "F11  Fullscreen", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-        line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "Scroll  Zoom", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
+        // Consolidated static help text (reduces DrawTextEx calls from 5 to 1)
+        const char *help_lines = "1-4  Dataset\nR    Camera mode\nH    Toggle help\nF11  Fullscreen\nScroll  Zoom";
+        DrawTextEx(app_state->main_font, help_lines, (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 
         if (app_state->is_paused)
         {
-            line_y += line_spacing + 6;
+            line_y += line_spacing * 5 + 6;
             DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, ACCENT_PURPLE);
         }
     }

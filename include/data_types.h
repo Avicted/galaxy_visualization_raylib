@@ -97,7 +97,7 @@
 
 // Font constants
 #define FONT_LOAD_SIZE 128
-#define FONT_GLYPH_COUNT 250
+#define FONT_GLYPH_COUNT 95 // ASCII 32-126 only (faster GetGlyphIndex lookup)
 #define FONT_SIZE_LARGE 32
 #define FONT_SIZE_MEDIUM 24
 

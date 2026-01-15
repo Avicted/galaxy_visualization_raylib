@@ -96,8 +96,14 @@ void renderer_draw_3d(app_state_t *app_state)
     rlSetClipPlanes(CAMERA_NEAR_PLANE, CAMERA_FAR_PLANE);
     BeginMode3D(app_state->main_camera);
 
-    Vector3 earth_pos = {0.0f, 0.0f, 0.0f};
-    DrawModel(app_state->earth_model, earth_pos, EARTH_SCALE, WHITE);
+    // Draw Earth model using DrawMesh for better performance (avoids immediate mode)
+    // DrawModel uses rlVertex3f internally which is slow
+    for (i32 i = 0; i < app_state->earth_model.meshCount; i++)
+    {
+        DrawMesh(app_state->earth_model.meshes[i],
+                 app_state->earth_model.materials[app_state->earth_model.meshMaterial[i]],
+                 app_state->earth_model.transform);
+    }
 
     if (app_state->data_to_draw == DRAW_DATA_A)
     {
