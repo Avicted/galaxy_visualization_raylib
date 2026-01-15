@@ -85,3 +85,14 @@ chmod +x ./build.sh
 ## Data sources
 - Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
 - Redshift data: https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat
+
+
+# TODO
+- The redshift mode is drawing "570" over the FPS counter. Fix that.
+
+- Do we really need lights? Optimization?
+- Remove the galaxy textures?
+- Improve the galaxy rendering (point sprites? / plane billboards?)
+
+- Refactor the code to be cleaner in separate files. With a clean main.c entry point.
+- Refactor logging to be cleaner and use only 3 significant digits.

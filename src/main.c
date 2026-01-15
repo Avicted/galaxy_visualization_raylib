@@ -50,6 +50,7 @@ typedef struct
     bool is_paused;
     bool cursor_enabled;
     bool show_help;
+    f64 fps_smoothed;
     Font main_font;
     i32 window_width;
     i32 window_height;
@@ -352,6 +353,22 @@ app_update(app_state_t *app_state, f64 dt)
         const f64 zoom_change = -32.0f;
         app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * zoom_change * dt, 0.5f, 5.0f);
     }
+
+    // Smooth FPS calculation for stable display
+    if (dt > 0.0)
+    {
+        f64 fps_inst = 1.0 / dt;
+        if (app_state->fps_smoothed <= 0.0)
+        {
+            app_state->fps_smoothed = fps_inst;
+        }
+        else
+        {
+            // Exponential moving average for stability
+            const f64 alpha = 0.1;
+            app_state->fps_smoothed = app_state->fps_smoothed * (1.0 - alpha) + fps_inst * alpha;
+        }
+    }
 }
 
 internal void
@@ -436,8 +453,10 @@ app_render(app_state_t *app_state, f64 dt)
 
     // Top-left: Current mode and FPS
     {
-        DrawRectangle(8, 8, 260, 60, PANEL_BG);
-        DrawRectangleLines(8, 8, 260, 60, PANEL_BORDER);
+        const i32 panel_w = 260;
+        const i32 panel_h = 78;
+        DrawRectangle(8, 8, panel_w, panel_h, PANEL_BG);
+        DrawRectangleLines(8, 8, panel_w, panel_h, PANEL_BORDER);
 
         // Dataset name - shorter names
         const char *dataset_names[] = {"Real Data", "Uniform", "Both", "Seyfert 3D"};
@@ -445,15 +464,15 @@ app_render(app_state_t *app_state, f64 dt)
         DrawTextEx(app_state->main_font, dataset_names[app_state->data_to_draw],
                    (Vector2){16, 12}, 22, 1, dataset_colors[app_state->data_to_draw]);
 
-        // FPS counter
-        DrawTextEx(app_state->main_font, TextFormat("FPS: %d", GetFPS()),
+        // FPS counter on its own line
+        DrawTextEx(app_state->main_font, TextFormat("FPS: %.0f", app_state->fps_smoothed),
                    (Vector2){16, 38}, 18, 1, TEXT_DIM);
 
-        // Galaxy count for redshift mode
+        // Galaxy count for redshift mode on a new line to avoid overlap
         if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
         {
-            DrawTextEx(app_state->main_font, TextFormat("x%lu", app_state->redshift_galaxy_count),
-                       (Vector2){100, 38}, 18, 1, TEXT_DIM);
+            DrawTextEx(app_state->main_font, TextFormat("Galaxies: %lu", app_state->redshift_galaxy_count),
+                       (Vector2){16, 58}, 16, 1, TEXT_DIM);
         }
     }
 
@@ -548,10 +567,10 @@ app_render(app_state_t *app_state, f64 dt)
     }
 
     // Help panel (togglable with H)
+    const i32 help_x = 8;
+    const i32 help_y = 90;
     if (app_state->show_help)
     {
-        const i32 help_x = 8;
-        const i32 help_y = 76;
         const i32 help_width = 280;
         i32 help_height = app_state->is_paused ? 170 : 140;
 
@@ -583,7 +602,7 @@ app_render(app_state_t *app_state, f64 dt)
     else
     {
         // Minimal help hint
-        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, 76}, 14, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, help_y}, 14, 1, TEXT_DIM);
     }
 
     // Dataset legend (compact, bottom-left)
@@ -978,6 +997,7 @@ app_init(app_state_t *app_state)
         .is_paused = false,
         .cursor_enabled = true,
         .show_help = true,
+        .fps_smoothed = 0.0,
 
         .data_points_a = NULL,
         .data_points_b = NULL,
