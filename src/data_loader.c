@@ -2,10 +2,301 @@
 #include "includes.h"
 #include "macros.h"
 
+#ifdef EMBED_ASSETS
+#include "embedded_assets.h"
+#endif
+
 global_variable const char *DATA_A_FILENAME = "./input_data/data_100k_arcmin.txt";
 global_variable const char *DATA_B_FILENAME = "./input_data/flat_100k_arcmin.txt";
 global_variable const char *REDSHIFT_DATA_FILENAME = "./input_data/redshift_input_data/seyfert.dat";
 global_variable const char *SAGA_DR3_FILENAME = "./input_data/redshift_input_data/saga-dr3-satellites.txt";
+
+#ifdef EMBED_ASSETS
+// Helper: Get next line from a memory buffer
+// Returns pointer to start of line, advances *pos past the newline
+// Returns NULL if no more lines
+static char *
+mem_getline(const char *data, size_t data_size, size_t *pos, char *line_buf, size_t line_buf_size)
+{
+    if (*pos >= data_size)
+    {
+        return NULL;
+    }
+
+    size_t i = 0;
+
+    while (*pos < data_size && data[*pos] != '\n' && i < line_buf_size - 1)
+    {
+        line_buf[i++] = data[(*pos)++];
+    }
+
+    // Skip the newline
+    if (*pos < data_size && data[*pos] == '\n')
+    {
+        (*pos)++;
+    }
+
+    // Remove trailing CR if present
+    if (i > 0 && line_buf[i - 1] == '\r')
+    {
+        i--;
+    }
+
+    line_buf[i] = '\0';
+    return line_buf;
+}
+
+// Memory-based arcmin file parser
+static usize
+data_loader_read_arcmin_from_memory(const char *data, size_t data_size, arcmin_data_t *data_points, ul max_points)
+{
+    char line[1024];
+    size_t pos = 0;
+
+    // Skip header line
+    if (mem_getline(data, data_size, &pos, line, sizeof(line)) == NULL)
+    {
+        fprintf(stderr, "[ERROR] Cannot read header from embedded data\n");
+        return 0;
+    }
+
+    ul i = 0;
+    while (i < max_points && mem_getline(data, data_size, &pos, line, sizeof(line)) != NULL)
+    {
+        size_t len = strlen(line);
+        if (len == 0)
+        {
+            continue;
+        }
+
+        char *p = line;
+        char *endptr = NULL;
+
+        f64 ra = strtod(p, &endptr);
+        if (endptr == p)
+        {
+            continue;
+        }
+
+        p = endptr;
+        while (*p == '\t' || *p == ' ' || *p == ',')
+        {
+            ++p;
+        }
+
+        f64 dec = strtod(p, &endptr);
+        if (endptr == p)
+        {
+            continue;
+        }
+
+        data_points[i].right_ascension = ra;
+        data_points[i].declination = dec;
+        ++i;
+    }
+
+    return (usize)i;
+}
+
+// Memory-based Seyfert redshift file parser
+static usize
+data_loader_read_redshift_from_memory(const char *data, size_t data_size, redshift_galaxy_t *galaxies, ul max_galaxies)
+{
+    char line[256];
+    size_t pos = 0;
+    ul galaxy_count = 0;
+    ul line_number = 0;
+
+    // Skip first 14 header lines
+    while (line_number < 14 && mem_getline(data, data_size, &pos, line, sizeof(line)) != NULL)
+    {
+        line_number++;
+    }
+
+    while (galaxy_count < max_galaxies && mem_getline(data, data_size, &pos, line, sizeof(line)) != NULL)
+    {
+        line_number++;
+        size_t len = strlen(line);
+
+        if (len < 30)
+        {
+            continue;
+        }
+        if (line[0] == '-')
+        {
+            continue;
+        }
+        if (line[0] == '\n' || line[0] == '\r')
+        {
+            continue;
+        }
+
+        char line_copy[256];
+        strncpy(line_copy, line, 255);
+        line_copy[255] = '\0';
+
+        char *tokens[20] = {0};
+        i32 token_count = 0;
+        char *token = strtok(line_copy, " \t\n\r");
+        while (token != NULL && token_count < 20)
+        {
+            tokens[token_count++] = token;
+            token = strtok(NULL, " \t\n\r");
+        }
+
+        if (token_count < 5)
+        {
+            continue;
+        }
+
+        strncpy(galaxies[galaxy_count].name, tokens[0], 15);
+        galaxies[galaxy_count].name[15] = '\0';
+
+        char *ra_str = tokens[1];
+        size_t ra_len = strlen(ra_str);
+        if (ra_len < 6)
+        {
+            continue;
+        }
+
+        char ra_h_str[3] = {ra_str[0], ra_str[1], '\0'};
+        char ra_m_str[3] = {ra_str[2], ra_str[3], '\0'};
+        char ra_s_str[8] = {0};
+        strncpy(ra_s_str, ra_str + 4, 7);
+
+        i32 ra_hours = atoi(ra_h_str);
+        i32 ra_minutes = atoi(ra_m_str);
+        f64 ra_seconds = strtod(ra_s_str, NULL);
+
+        f64 ra_decimal_hours = (f64)ra_hours + (f64)ra_minutes / 60.0 + ra_seconds / 3600.0;
+        galaxies[galaxy_count].right_ascension = ra_decimal_hours * 15.0;
+
+        char *dec_str = tokens[2];
+        size_t dec_len = strlen(dec_str);
+        if (dec_len < 5)
+        {
+            continue;
+        }
+
+        bool is_negative = (dec_str[0] == '-');
+        i32 dec_start = (dec_str[0] == '-' || dec_str[0] == '+') ? 1 : 0;
+
+        char dec_d_str[3] = {dec_str[dec_start], dec_str[dec_start + 1], '\0'};
+        char dec_m_str[3] = {dec_str[dec_start + 2], dec_str[dec_start + 3], '\0'};
+        char dec_s_str[3] = {0};
+        if (dec_len >= (size_t)(dec_start + 6))
+        {
+            dec_s_str[0] = dec_str[dec_start + 4];
+            dec_s_str[1] = dec_str[dec_start + 5];
+        }
+
+        i32 dec_degrees = atoi(dec_d_str);
+        i32 dec_minutes = atoi(dec_m_str);
+        i32 dec_seconds = atoi(dec_s_str);
+
+        f64 dec_decimal = (f64)dec_degrees + (f64)dec_minutes / 60.0 + (f64)dec_seconds / 3600.0;
+        if (is_negative)
+        {
+            dec_decimal = -dec_decimal;
+        }
+        galaxies[galaxy_count].declination = dec_decimal;
+
+        galaxies[galaxy_count].b_magnitude = strtod(tokens[3], NULL);
+
+        i32 velocity = atoi(tokens[4]);
+        if (velocity <= 500)
+        {
+            continue;
+        }
+
+        galaxies[galaxy_count].helio_velocity = (f64)velocity;
+        galaxy_count++;
+    }
+
+    printf("[INFO]  Loaded %lu redshift galaxies (embedded)\n", galaxy_count);
+    return galaxy_count;
+}
+
+// Memory-based SAGA DR3 file parser
+static usize
+data_loader_read_saga_dr3_from_memory(const char *data, size_t data_size, redshift_galaxy_t *galaxies, ul max_galaxies)
+{
+    char line[512];
+    size_t pos = 0;
+    ul galaxy_count = 0;
+    ul line_number = 0;
+
+    // Skip header lines (23 lines)
+    while (line_number < 23 && mem_getline(data, data_size, &pos, line, sizeof(line)) != NULL)
+    {
+        line_number++;
+    }
+
+    while (galaxy_count < max_galaxies && mem_getline(data, data_size, &pos, line, sizeof(line)) != NULL)
+    {
+        line_number++;
+        size_t len = strlen(line);
+
+        if (len < 50)
+        {
+            continue;
+        }
+
+        char line_copy[512];
+        strncpy(line_copy, line, 511);
+        line_copy[511] = '\0';
+
+        char *tokens[20] = {0};
+        i32 token_count = 0;
+        char *token = strtok(line_copy, " \t\n\r");
+        while (token != NULL && token_count < 20)
+        {
+            tokens[token_count++] = token;
+            token = strtok(NULL, " \t\n\r");
+        }
+
+        if (token_count < 15)
+        {
+            continue;
+        }
+
+        f64 redshift = strtod(tokens[14], NULL);
+        if (redshift <= 0.0 || redshift > 1.0)
+        {
+            continue;
+        }
+
+        f64 velocity = redshift * SPEED_OF_LIGHT_KMS;
+        if (velocity <= MIN_VELOCITY_THRESHOLD)
+        {
+            continue;
+        }
+
+        f64 ra = strtod(tokens[3], NULL);
+        f64 dec = strtod(tokens[4], NULL);
+
+        if (ra < 0.0 || ra > 360.0 || dec < -90.0 || dec > 90.0)
+        {
+            continue;
+        }
+
+        f64 magnitude = strtod(tokens[5], NULL);
+
+        strncpy(galaxies[galaxy_count].name, tokens[0], 15);
+        galaxies[galaxy_count].name[15] = '\0';
+
+        galaxies[galaxy_count].right_ascension = ra;
+        galaxies[galaxy_count].declination = dec;
+        galaxies[galaxy_count].helio_velocity = velocity;
+        galaxies[galaxy_count].b_magnitude = magnitude;
+
+        galaxy_count++;
+    }
+
+    printf("[INFO]  Loaded %lu SAGA DR3 galaxies (embedded)\n", galaxy_count);
+    return galaxy_count;
+}
+#endif // EMBED_ASSETS
 
 usize data_loader_read_arcmin_file(const char *file_name, arcmin_data_t *data_points, ul max_points)
 {
@@ -331,6 +622,58 @@ i32 data_loader_load_all(app_state_t *app_state)
     }
     app_state->cpu_memory_allocated += (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
 
+#ifdef EMBED_ASSETS
+    // Load from embedded compressed data
+    {
+        unsigned char *data_a = NULL;
+        size_t data_a_size = 0;
+        EMBEDDED_DECOMPRESS(data_arcmin_a, &data_a, &data_a_size);
+        if (data_a != NULL)
+        {
+            usize count_a = data_loader_read_arcmin_from_memory((const char *)data_a, data_a_size,
+                                                                app_state->data_points_a, MAX_DATA_POINTS);
+            free(data_a);
+            if (count_a == 0)
+            {
+                fprintf(stderr, "[ERROR] Parse failed: embedded data_a\n");
+                return 1;
+            }
+            app_state->data_point_count = (ul)count_a;
+        }
+        else
+        {
+            fprintf(stderr, "[ERROR] Decompress failed: data_a\n");
+            return 1;
+        }
+    }
+
+    {
+        unsigned char *data_b = NULL;
+        size_t data_b_size = 0;
+        EMBEDDED_DECOMPRESS(data_arcmin_b, &data_b, &data_b_size);
+        if (data_b != NULL)
+        {
+            usize count_b = data_loader_read_arcmin_from_memory((const char *)data_b, data_b_size,
+                                                                app_state->data_points_b, MAX_DATA_POINTS);
+            free(data_b);
+            if (count_b == 0)
+            {
+                fprintf(stderr, "[ERROR] Parse failed: embedded data_b\n");
+                return 1;
+            }
+            // Use minimum of both counts
+            if ((ul)count_b < app_state->data_point_count)
+            {
+                app_state->data_point_count = (ul)count_b;
+            }
+        }
+        else
+        {
+            fprintf(stderr, "[ERROR] Decompress failed: data_b\n");
+            return 1;
+        }
+    }
+#else
     usize count_a = data_loader_read_arcmin_file(DATA_A_FILENAME, app_state->data_points_a, MAX_DATA_POINTS);
     if (count_a == 0)
     {
@@ -351,6 +694,7 @@ i32 data_loader_load_all(app_state_t *app_state)
     }
 
     app_state->data_point_count = (ul)MIN((usize)count_a, (usize)count_b);
+#endif
 
     if (app_state->data_point_count == 0)
     {
@@ -366,6 +710,39 @@ i32 data_loader_load_all(app_state_t *app_state)
     }
     app_state->cpu_memory_allocated += (usize)MAX_REDSHIFT_GALAXIES * sizeof(redshift_galaxy_t);
 
+#ifdef EMBED_ASSETS
+    usize redshift_count = 0;
+    {
+        unsigned char *seyfert_data = NULL;
+        size_t seyfert_size = 0;
+        EMBEDDED_DECOMPRESS(data_seyfert, &seyfert_data, &seyfert_size);
+        if (seyfert_data != NULL)
+        {
+            redshift_count = data_loader_read_redshift_from_memory((const char *)seyfert_data, seyfert_size,
+                                                                   app_state->redshift_galaxies, MAX_REDSHIFT_GALAXIES);
+            free(seyfert_data);
+        }
+    }
+    printf("[INFO]  Seyfert galaxies: %zu\n", redshift_count);
+
+    {
+        unsigned char *saga_data = NULL;
+        size_t saga_size = 0;
+        EMBEDDED_DECOMPRESS(data_saga_dr3, &saga_data, &saga_size);
+        if (saga_data != NULL)
+        {
+            usize remaining = MAX_REDSHIFT_GALAXIES - redshift_count;
+            if (remaining > 0)
+            {
+                usize saga_count = data_loader_read_saga_dr3_from_memory((const char *)saga_data, saga_size,
+                                                                         &app_state->redshift_galaxies[redshift_count],
+                                                                         remaining);
+                redshift_count += saga_count;
+            }
+            free(saga_data);
+        }
+    }
+#else
     // Load Seyfert redshift data first
     usize redshift_count = data_loader_read_redshift_file(REDSHIFT_DATA_FILENAME, app_state->redshift_galaxies, MAX_REDSHIFT_GALAXIES);
     printf("[INFO]  Seyfert galaxies: %zu\n", redshift_count);
@@ -379,6 +756,7 @@ i32 data_loader_load_all(app_state_t *app_state)
                                                           remaining_space);
         redshift_count += saga_count;
     }
+#endif
 
     app_state->redshift_galaxy_count = (ul)redshift_count;
 

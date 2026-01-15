@@ -1,4 +1,5 @@
 build/
+build_embedded/
 
 galaxy_visualization_raylib
 

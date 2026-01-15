@@ -1,10 +1,18 @@
 #include "shaders.h"
 #define RLIGHTS_IMPLEMENTATION
-#include "rlights.h"
+#include "../vendor/rlights.h"
+
+#ifdef EMBED_ASSETS
+#include "embedded_assets.h"
+#endif
 
 i32 shaders_init(app_state_t *app_state)
 {
+#ifdef EMBED_ASSETS
+    app_state->custom_shader = LoadShaderFromMemory(shader_lighting_instancing_vs_data, shader_lighting_fs_data);
+#else
     app_state->custom_shader = LoadShader("./shaders/lighting_instancing.vs", "./shaders/lighting.fs");
+#endif
     app_state->custom_shader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(app_state->custom_shader, "mvp");
     app_state->custom_shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(app_state->custom_shader, "viewPos");
     app_state->custom_shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(app_state->custom_shader, "instanceTransform");

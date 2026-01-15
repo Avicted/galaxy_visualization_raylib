@@ -6,7 +6,7 @@
             "command": "CC=clang meson setup --reconfigure build",
             "args": [],
             "options": {
-                "cwd": "${workspaceFolder}",
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [],
             "group": {
@@ -21,7 +21,7 @@
             "command": "CC=clang meson setup --reconfigure build && meson compile -C build",
             "args": [],
             "options": {
-                "cwd": "${workspaceFolder}",
+                "cwd": "${workspaceFolder}"
             },
             "problemMatcher": [],
             "group": {
@@ -29,6 +29,51 @@
                 "isDefault": false
             },
             "detail": "Compile Meson project"
+        },
+        {
+            "label": "Meson Setup (Embedded)",
+            "type": "shell",
+            "command": "CC=clang meson setup --reconfigure build_embedded -Dembed_assets=true",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Reconfigure Meson embedded build"
+        },
+        {
+            "label": "Meson Compile (Embedded)",
+            "type": "shell",
+            "command": "CC=clang meson setup --reconfigure build_embedded -Dembed_assets=true && meson compile -C build_embedded",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Compile single portable binary with embedded assets"
+        },
+        {
+            "label": "Build (Embedded via build.sh)",
+            "type": "shell",
+            "command": "./build.sh --embed",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Build single portable binary using build.sh"
         }
     ],
     "version": "2.0.0"
