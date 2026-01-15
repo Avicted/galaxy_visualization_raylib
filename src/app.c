@@ -183,7 +183,7 @@ i32 app_init(app_state_t *app_state)
 
     print_memory_usage(app_state);
 
-    app_state->earth_model = LoadModel("./assets/Earth_1_12756.glb");
+    app_state->earth_model = LoadModel("./assets/Earth_1_12756_optimized.glb");
     Matrix earth_scale_matrix = MatrixScale(EARTH_MODEL_SCALE, EARTH_MODEL_SCALE, EARTH_MODEL_SCALE);
     app_state->earth_model.transform = MatrixMultiply(app_state->earth_model.transform, earth_scale_matrix);
 
