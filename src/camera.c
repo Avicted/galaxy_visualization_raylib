@@ -33,8 +33,8 @@ void camera_handle_resize(app_state_t *app_state)
 void camera_update(app_state_t *app_state, f64 dt)
 {
     Camera3D *cam = &app_state->main_camera;
-    f64 speed = 10.0f * dt;
-    f64 vertical_speed = 5.0f * dt;
+    f64 speed = CAMERA_MOVE_SPEED * dt;
+    f64 vertical_speed = CAMERA_VERTICAL_SPEED * dt;
 
     f64 *yaw = &app_state->camera_yaw;
     f64 *pitch = &app_state->camera_pitch;
@@ -50,27 +50,27 @@ void camera_update(app_state_t *app_state, f64 dt)
             HideCursor();
             app_state->cursor_enabled = false;
 
-            cam->position = (Vector3){13.632f, 1.377f, 9.318f};
-            cam->target = (Vector3){14.176f, 1.954f, 9.927f};
-            *direction = (Vector3){0.545f, 0.577f, 0.609f};
-            *yaw = 48.0f;
-            *pitch = 35.220f;
+            cam->position = (Vector3){FREE_LOOK_POS_X, FREE_LOOK_POS_Y, FREE_LOOK_POS_Z};
+            cam->target = (Vector3){FREE_LOOK_TARGET_X, FREE_LOOK_TARGET_Y, FREE_LOOK_TARGET_Z};
+            *direction = (Vector3){FREE_LOOK_DIR_X, FREE_LOOK_DIR_Y, FREE_LOOK_DIR_Z};
+            *yaw = FREE_LOOK_YAW;
+            *pitch = FREE_LOOK_PITCH;
         }
 
         const Vector2 mouse_delta = GetMouseDelta();
-        *yaw += mouse_delta.x * 0.1f;
-        *pitch -= mouse_delta.y * 0.1f;
+        *yaw += mouse_delta.x * CAMERA_MOUSE_SENSITIVITY;
+        *pitch -= mouse_delta.y * CAMERA_MOUSE_SENSITIVITY;
 
         const Vector2 mouse_pos = {GetScreenWidth() / 2.0f, GetScreenHeight() / 2.0f};
         SetMousePosition(mouse_pos.x, mouse_pos.y);
 
-        if (*pitch > 89.0f)
+        if (*pitch > CAMERA_PITCH_LIMIT)
         {
-            *pitch = 89.0f;
+            *pitch = CAMERA_PITCH_LIMIT;
         }
-        if (*pitch < -89.0f)
+        if (*pitch < -CAMERA_PITCH_LIMIT)
         {
-            *pitch = -89.0f;
+            *pitch = -CAMERA_PITCH_LIMIT;
         }
 
         direction->x = cosf(DEG2RAD * (*pitch)) * cosf(DEG2RAD * (*yaw));
@@ -83,8 +83,8 @@ void camera_update(app_state_t *app_state, f64 dt)
 
         if (IsKeyDown(KEY_LEFT_CONTROL))
         {
-            speed *= 0.1f;
-            vertical_speed *= 0.1f;
+            speed *= CAMERA_SLOW_FACTOR;
+            vertical_speed *= CAMERA_SLOW_FACTOR;
         }
 
         if (IsKeyDown(KEY_W))
@@ -123,11 +123,11 @@ void camera_update(app_state_t *app_state, f64 dt)
         }
 
         local_persist f64 previous_time_since_start = 0.0f;
-        previous_time_since_start += dt * 0.2f;
+        previous_time_since_start += dt * CAMERA_ORBIT_SPEED;
 
-        cam->position.x = 25.0f * cosf(previous_time_since_start) * app_state->camera_zoom;
-        cam->position.y = 50.0f;
-        cam->position.z = 25.0f * sinf(previous_time_since_start) * app_state->camera_zoom;
+        cam->position.x = CAMERA_ORBIT_RADIUS * cosf(previous_time_since_start) * app_state->camera_zoom;
+        cam->position.y = CAMERA_ORBIT_HEIGHT;
+        cam->position.z = CAMERA_ORBIT_RADIUS * sinf(previous_time_since_start) * app_state->camera_zoom;
 
         cam->target = Vector3Zero();
     }

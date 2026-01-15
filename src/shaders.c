@@ -18,7 +18,7 @@ i32 shaders_init(app_state_t *app_state)
         f64 diffuse_value[4] = {1.0, 1.0, 1.0, 1.0};
         SetShaderValue(app_state->custom_shader, color_diffuse_loc, &diffuse_value, SHADER_UNIFORM_VEC4);
 
-        CreateLight(LIGHT_DIRECTIONAL, (Vector3){1000.0f, 1000.0f, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
+        CreateLight(LIGHT_DIRECTIONAL, (Vector3){LIGHT_POSITION_X, LIGHT_POSITION_Y, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
     }
 
     {
@@ -28,7 +28,7 @@ i32 shaders_init(app_state_t *app_state)
         galaxy_material.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
         galaxy_material.maps[MATERIAL_MAP_SPECULAR].value = 0.0f;
 
-        f32 shininess = 1.0f;
+        f32 shininess = SHININESS_DEFAULT;
         SetShaderValue(galaxy_material.shader, GetShaderLocation(galaxy_material.shader, "shininess"), &shininess, SHADER_UNIFORM_FLOAT);
 
         app_state->material_instance = galaxy_material;

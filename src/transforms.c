@@ -5,33 +5,35 @@
 f64 transforms_distance_from_velocity(f64 velocity_km_s)
 {
     if (velocity_km_s <= 0.0)
-        return 200.0;
+    {
+        return RENDER_DISTANCE_MIN;
+    }
 
-    f64 normalized = (velocity_km_s - 500.0) / 90000.0;
+    f64 normalized = (velocity_km_s - VELOCITY_NORMALIZATION_BASE) / VELOCITY_NORMALIZATION_RANGE;
     normalized = fmax(0.0, fmin(normalized, 1.0));
 
-    f64 render_distance = 200.0 + sqrt(normalized) * 600.0;
+    f64 render_distance = RENDER_DISTANCE_MIN + sqrt(normalized) * RENDER_DISTANCE_RANGE;
     return render_distance;
 }
 
 Color transforms_color_from_velocity(f64 velocity_km_s)
 {
-    f64 t = (velocity_km_s - 1000.0) / 85000.0;
+    f64 t = (velocity_km_s - COLOR_VELOCITY_BASE) / COLOR_VELOCITY_RANGE;
     t = fmax(0.0, fmin(t, 1.0));
 
     Color color;
 
-    if (t < 0.33)
+    if (t < COLOR_THRESHOLD_LOW)
     {
-        f64 s = t / 0.33;
+        f64 s = t / COLOR_THRESHOLD_LOW;
         color.r = (u8)(s * 255.0);
         color.g = (u8)(200.0 + s * 55.0);
         color.b = (u8)(255.0 - s * 175.0);
         color.a = 255;
     }
-    else if (t < 0.66)
+    else if (t < COLOR_THRESHOLD_MID)
     {
-        f64 s = (t - 0.33) / 0.33;
+        f64 s = (t - COLOR_THRESHOLD_LOW) / COLOR_THRESHOLD_LOW;
         color.r = 255;
         color.g = (u8)(230 - s * 100);
         color.b = (u8)(55 - s * 35);
@@ -39,7 +41,7 @@ Color transforms_color_from_velocity(f64 velocity_km_s)
     }
     else
     {
-        f64 s = (t - 0.66) / 0.34;
+        f64 s = (t - COLOR_THRESHOLD_MID) / COLOR_THRESHOLD_HIGH;
         color.r = (u8)(255 - s * 55);
         color.g = (u8)(130 - s * 90);
         color.b = (u8)(20 - s * 10);
@@ -54,28 +56,28 @@ i32 transforms_init_course_data(app_state_t *app_state)
     for (ul i = 0; i < app_state->data_point_count; ++i)
     {
         {
-            const f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / 60.0) * DEG2RAD;
-            const f64 declination_rad = (app_state->data_points_a[i].declination / 60.0) * DEG2RAD;
-            const f64 radius = 50.0;
+            const f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / ARCMIN_TO_DEGREES) * DEG2RAD;
+            const f64 declination_rad = (app_state->data_points_a[i].declination / ARCMIN_TO_DEGREES) * DEG2RAD;
+            const f64 radius = COURSE_DATA_RADIUS;
             const f64 x = radius * cos(right_ascension_rad) * cos(declination_rad);
             const f64 y = radius * sin(declination_rad);
             const f64 z = radius * sin(right_ascension_rad) * cos(declination_rad);
 
             app_state->matrix_transforms_a[i] = MatrixIdentity();
-            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixScale(0.1f, 0.1f, 0.1f));
+            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE));
             app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate((f32)x, (f32)y, (f32)z));
         }
 
         {
-            const f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / 60.0) * DEG2RAD;
-            const f64 declination_rad = (app_state->data_points_b[i].declination / 60.0) * DEG2RAD;
-            const f64 radius = 50.0;
+            const f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / ARCMIN_TO_DEGREES) * DEG2RAD;
+            const f64 declination_rad = (app_state->data_points_b[i].declination / ARCMIN_TO_DEGREES) * DEG2RAD;
+            const f64 radius = COURSE_DATA_RADIUS;
             const f64 x = radius * cos(right_ascension_rad) * cos(declination_rad);
             const f64 y = radius * sin(declination_rad);
             const f64 z = radius * sin(right_ascension_rad) * cos(declination_rad);
 
             app_state->matrix_transforms_b[i] = MatrixIdentity();
-            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixScale(0.1f, 0.1f, 0.1f));
+            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE));
             app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate((f32)x, (f32)y, (f32)z));
         }
     }
@@ -99,11 +101,11 @@ i32 transforms_init_redshift_data(app_state_t *app_state)
 
         app_state->matrix_transforms_redshift[i] = MatrixIdentity();
 
-        f64 magnitude_scale = 0.6;
-        if (galaxy->b_magnitude > 0.0 && galaxy->b_magnitude < 20.0)
+        f64 magnitude_scale = MAGNITUDE_DEFAULT_SCALE;
+        if (galaxy->b_magnitude > 0.0 && galaxy->b_magnitude < MAGNITUDE_MAX_VALID)
         {
-            magnitude_scale = 1.0 / (galaxy->b_magnitude / 12.0);
-            magnitude_scale = fmax(0.3, fmin(magnitude_scale, 1.2));
+            magnitude_scale = 1.0 / (galaxy->b_magnitude / MAGNITUDE_REFERENCE);
+            magnitude_scale = fmax(MAGNITUDE_SCALE_MIN, fmin(magnitude_scale, MAGNITUDE_SCALE_MAX));
         }
 
         app_state->matrix_transforms_redshift[i] = MatrixMultiply(

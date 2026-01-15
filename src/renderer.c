@@ -7,8 +7,7 @@ void renderer_draw_3d(app_state_t *app_state)
     BeginMode3D(app_state->main_camera);
 
     Vector3 earth_pos = {0.0f, 0.0f, 0.0f};
-    const f64 earth_scale = 1.0f;
-    DrawModel(app_state->earth_model, earth_pos, earth_scale, WHITE);
+    DrawModel(app_state->earth_model, earth_pos, EARTH_SCALE, WHITE);
 
     if (app_state->data_to_draw == DRAW_DATA_A || app_state->data_to_draw == DRAW_DATA_ALL)
     {
@@ -46,9 +45,9 @@ void renderer_draw_3d(app_state_t *app_state)
             Color base_color = app_state->redshift_galaxy_colors[i];
 
             Color bright_color = {
-                (u8)fmin(255, base_color.r + 80),
-                (u8)fmin(255, base_color.g + 80),
-                (u8)fmin(255, base_color.b + 80),
+                (u8)fmin(255, base_color.r + COLOR_BRIGHTNESS_BOOST),
+                (u8)fmin(255, base_color.g + COLOR_BRIGHTNESS_BOOST),
+                (u8)fmin(255, base_color.b + COLOR_BRIGHTNESS_BOOST),
                 255};
 
             DrawCube(pos, size, size, size, bright_color);

@@ -54,8 +54,8 @@ app_update(app_state_t *app_state, f64 dt)
     f64 scroll = GetMouseWheelMove();
     if (scroll != 0.0f)
     {
-        const f64 zoom_change = -32.0f;
-        app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * zoom_change * dt, 0.5f, 5.0f);
+        const f64 zoom_change = -CAMERA_ZOOM_SPEED;
+        app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * zoom_change * dt, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX);
     }
 
     if (dt > 0.0)
@@ -68,13 +68,12 @@ app_update(app_state_t *app_state, f64 dt)
         }
         else
         {
-            const f64 alpha = 0.1;
+            const f64 alpha = FPS_SMOOTHING_ALPHA;
             app_state->fps_smoothed = app_state->fps_smoothed * (1.0 - alpha) + fps_inst * alpha;
         }
 
         app_state->fps_update_timer += dt;
-        const f32 fps_update_interval = 0.5f;
-        if (app_state->fps_update_timer >= fps_update_interval)
+        if (app_state->fps_update_timer >= FPS_UPDATE_INTERVAL)
         {
             app_state->fps_display = app_state->fps_smoothed;
             app_state->fps_update_timer = 0.0;
@@ -125,12 +124,12 @@ i32 app_init(app_state_t *app_state)
     app_state->show_help = true;
 
     app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
-    app_state->main_camera.fovy = 85.0f;
+    app_state->main_camera.fovy = CAMERA_FOV;
     app_state->main_camera.projection = CAMERA_PERSPECTIVE;
 
-    app_state->camera_zoom = 0.8f * PI;
-    app_state->camera_yaw = 45.80f;
-    app_state->camera_pitch = 42.12f;
+    app_state->camera_zoom = CAMERA_INITIAL_ZOOM;
+    app_state->camera_yaw = CAMERA_INITIAL_YAW;
+    app_state->camera_pitch = CAMERA_INITIAL_PITCH;
 
     app_state->data_to_draw = DRAW_DATA_ALL;
 
@@ -154,10 +153,10 @@ i32 app_init(app_state_t *app_state)
         return 1;
     }
 
-    app_state->main_font = LoadFontEx("./assets/fonts/Perfect DOS VGA 437.ttf", 128, 0, 250);
+    app_state->main_font = LoadFontEx("./assets/fonts/Perfect DOS VGA 437.ttf", FONT_LOAD_SIZE, 0, FONT_GLYPH_COUNT);
 
-    app_state->sphere_mesh = GenMeshSphere(0.2f, 4, 4);
-    app_state->cube_mesh = GenMeshCube(1.0f, 1.0f, 1.0f);
+    app_state->sphere_mesh = GenMeshSphere(SPHERE_MESH_RADIUS, SPHERE_MESH_RINGS, SPHERE_MESH_SLICES);
+    app_state->cube_mesh = GenMeshCube(CUBE_MESH_SIZE, CUBE_MESH_SIZE, CUBE_MESH_SIZE);
 
     if (shaders_init(app_state) != 0)
     {
@@ -168,7 +167,7 @@ i32 app_init(app_state_t *app_state)
     print_memory_usage(app_state);
 
     app_state->earth_model = LoadModel("./assets/Earth_1_12756.glb");
-    Matrix earth_scale_matrix = MatrixScale(0.01f, 0.01f, 0.01f);
+    Matrix earth_scale_matrix = MatrixScale(EARTH_MODEL_SCALE, EARTH_MODEL_SCALE, EARTH_MODEL_SCALE);
     app_state->earth_model.transform = MatrixMultiply(app_state->earth_model.transform, earth_scale_matrix);
 
     return 0;
