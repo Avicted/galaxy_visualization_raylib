@@ -74,13 +74,12 @@ chmod +x ./build.sh
 ./build/galaxy_visualization_raylib
 ```
 
-##  Demo
+## Examples
 
-![demo](assets/images/galaxy_demo_optimized.gif "galaxy_demo_optimized.gif")
+![real_data](assets/images/real_data.png "real_data.png")
+![real_data](assets/images/redshift_data.png "redshift_data.png")
 
 ---
-
-![screen](assets/images/screenshot.png "screenshot.png")
 
 ## Data sources
 - Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
