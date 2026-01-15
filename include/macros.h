@@ -13,8 +13,8 @@
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
-#define Kilobytes(Value) ((Value) * 1024LL)
-#define Megabytes(Value) (Kilobytes(Value) * 1024LL)
-#define Gigabytes(Value) (Megabytes(Value) * 1024LL)
+#define KiloBytes(Value) (Value << 10LL)
+#define MegaBytes(Value) (Value << 20LL)
+#define GigaBytes(Value) (Value << 30LL)
 
 #endif // MACROS_H
