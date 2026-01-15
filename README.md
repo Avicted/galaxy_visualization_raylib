@@ -12,11 +12,11 @@ The students must leverage the GPU for these calculations on their own using a s
 - The expected runtime for the calculation is approximately 3 seconds.
     - It is possible to optimize the runtime to 0.85 seconds on a single GPU (my own solution tested with one AMD RX 6900 XT).
 - **This program is a visualization of the data, not the solution to the assignment.**
-
+- Redshift data is sourced from: [Harvard University](https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat) and visualized in 3D space with colors based on redshift values.
 
 ## Prerequisites
 
-This project can be built using clang through build.sh (raylib is the only dependency) or use Meson as the build system.
+This project can be built using clang/gcc through build.sh (raylib is the only dependency) or use Meson as the build system.
 
 
 ## Dependencies
@@ -86,12 +86,5 @@ chmod +x ./build.sh
 - Added earth model: https://science.nasa.gov/resource/earth-3d-model/ | Credit: NASA Visualization Technology Applications and Development (VTAD).
 - Redshift data: https://lweb.cfa.harvard.edu/~dfabricant/huchra/zcat/seyfert.dat
 
-
-# TODO
-- The redshift mode is drawing "570" over the FPS counter. Fix that.
-- Do we really need lights? Optimization?
-- Remove the galaxy textures?
-- Improve the galaxy rendering (point sprites? / plane billboards?)
-- Refactor logging to be cleaner and use only 3 significant digits.
-
-- Refactor the code to be cleaner in separate files. With a clean main.c entry point.
+## License
+MIT License - see the [LICENSE](LICENSE) file for details

@@ -122,12 +122,31 @@ void camera_update(app_state_t *app_state, f64 dt)
             app_state->cursor_enabled = true;
         }
 
-        local_persist f64 previous_time_since_start = 0.0f;
-        previous_time_since_start += dt * CAMERA_ORBIT_SPEED;
+        local_persist f64 orbit_time = 0.0f;
 
-        cam->position.x = CAMERA_ORBIT_RADIUS * cosf(previous_time_since_start) * app_state->camera_zoom;
-        cam->position.y = CAMERA_ORBIT_HEIGHT;
-        cam->position.z = CAMERA_ORBIT_RADIUS * sinf(previous_time_since_start) * app_state->camera_zoom;
+        if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
+        {
+            // Redshift mode: orbit farther out with varying pitch to see all galaxies
+            orbit_time += dt * REDSHIFT_ORBIT_SPEED;
+
+            f64 pitch_angle = sin(orbit_time * REDSHIFT_PITCH_SPEED / REDSHIFT_ORBIT_SPEED) * REDSHIFT_PITCH_AMPLITUDE;
+            f64 pitch_rad = pitch_angle * DEG2RAD;
+
+            f64 horizontal_radius = REDSHIFT_ORBIT_RADIUS * cos(pitch_rad) * app_state->camera_zoom;
+
+            cam->position.x = horizontal_radius * cosf(orbit_time);
+            cam->position.y = REDSHIFT_ORBIT_RADIUS * sin(pitch_rad) * app_state->camera_zoom;
+            cam->position.z = horizontal_radius * sinf(orbit_time);
+        }
+        else
+        {
+            // Normal mode: flat orbit at fixed height
+            orbit_time += dt * CAMERA_ORBIT_SPEED;
+
+            cam->position.x = CAMERA_ORBIT_RADIUS * cosf(orbit_time) * app_state->camera_zoom;
+            cam->position.y = CAMERA_ORBIT_HEIGHT;
+            cam->position.z = CAMERA_ORBIT_RADIUS * sinf(orbit_time) * app_state->camera_zoom;
+        }
 
         cam->target = Vector3Zero();
     }

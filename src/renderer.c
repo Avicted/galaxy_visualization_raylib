@@ -11,8 +11,8 @@ void renderer_draw_3d(app_state_t *app_state)
 
     if (app_state->data_to_draw == DRAW_DATA_A || app_state->data_to_draw == DRAW_DATA_ALL)
     {
-        const Color DARK_BLUE = {0, 0, 255, 255};
-        app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = DARK_BLUE;
+        const Color GALAXIES_BLUE = {32, 32, 255, 255};
+        app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = GALAXIES_BLUE;
 
         DrawMeshInstanced(
             app_state->sphere_mesh,
@@ -23,7 +23,8 @@ void renderer_draw_3d(app_state_t *app_state)
 
     if (app_state->data_to_draw == DRAW_DATA_B || app_state->data_to_draw == DRAW_DATA_ALL)
     {
-        app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = RED;
+        const Color GALAXIES_RED = {255, 32, 32, 255};
+        app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = GALAXIES_RED;
 
         DrawMeshInstanced(
             app_state->sphere_mesh,
@@ -65,7 +66,8 @@ void renderer_draw_frame(app_state_t *app_state)
     }
 
     BeginDrawing();
-    ClearBackground(BLACK);
+    const Color clear_color = (Color){4, 4, 8, 255};
+    ClearBackground(clear_color);
 
     renderer_draw_3d(app_state);
     ui_draw(app_state);

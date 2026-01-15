@@ -108,9 +108,15 @@ i32 transforms_init_redshift_data(app_state_t *app_state)
             magnitude_scale = fmax(MAGNITUDE_SCALE_MIN, fmin(magnitude_scale, MAGNITUDE_SCALE_MAX));
         }
 
+        // Scale size based on distance so farther galaxies remain visible
+        f64 distance_t = (radius - RENDER_DISTANCE_MIN) / RENDER_DISTANCE_RANGE;
+        distance_t = fmax(0.0, fmin(distance_t, 1.0));
+        f64 distance_scale = DISTANCE_SIZE_SCALE_MIN + distance_t * (DISTANCE_SIZE_SCALE_MAX - DISTANCE_SIZE_SCALE_MIN);
+        f64 final_scale = magnitude_scale * distance_scale;
+
         app_state->matrix_transforms_redshift[i] = MatrixMultiply(
             app_state->matrix_transforms_redshift[i],
-            MatrixScale((f32)magnitude_scale, (f32)magnitude_scale, (f32)magnitude_scale));
+            MatrixScale((f32)final_scale, (f32)final_scale, (f32)final_scale));
         app_state->matrix_transforms_redshift[i] = MatrixMultiply(
             app_state->matrix_transforms_redshift[i],
             MatrixTranslate((f32)x, (f32)y, (f32)z));
