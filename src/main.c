@@ -862,11 +862,13 @@ calculate_redshift_color(f64 velocity_km_s)
 
     if (t < 0.33)
     {
-        // Cyan to green-yellow (nearby galaxies)
+        // Saturated cyan -> green-yellow (nearby galaxies), less "white" by reducing red/green at the cyan end
         f64 s = t / 0.33;
-        color.r = (u8)(100 + s * 155); // 100 -> 255
-        color.g = (u8)(255 - s * 25);  // 255 -> 230
-        color.b = (u8)(255 - s * 200); // 255 -> 55
+
+        // Start: (0, 200, 255)  End: (255, 255, 80)
+        color.r = (u8)(s * 255.0);
+        color.g = (u8)(200.0 + s * 55.0);
+        color.b = (u8)(255.0 - s * 175.0);
         color.a = 255;
     }
     else if (t < 0.66)
