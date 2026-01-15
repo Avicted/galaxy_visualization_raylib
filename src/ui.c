@@ -17,7 +17,7 @@ ui_draw_info_panel(app_state_t *app_state)
     DrawRectangle(UI_PANEL_MARGIN, UI_PANEL_MARGIN, panel_w, panel_h, PANEL_BG);
     DrawRectangleLines(UI_PANEL_MARGIN, UI_PANEL_MARGIN, panel_w, panel_h, PANEL_BORDER);
 
-    const char *dataset_names[] = {"Real Data", "Uniform", "Both", "Seyfert 3D"};
+    const char *dataset_names[] = {"Real Data", "Uniform", "Both", "Redshift"};
     Color dataset_colors[] = {ACCENT_BLUE, ACCENT_RED, WHITE, ACCENT_PURPLE};
     DrawTextEx(app_state->main_font, dataset_names[app_state->data_to_draw],
                (Vector2){16, 12}, FONT_SIZE_LARGE, 1, dataset_colors[app_state->data_to_draw]);
@@ -179,7 +179,7 @@ ui_draw_dataset_legend(app_state_t *app_state)
     const i32 legend_text_y = legend_y + 10;
 
     // Draw all legend items in one call (same color - use TEXT_DIM)
-    const char *legend_text = "1 Real (blue)\n2 Uniform (red)\n3 Both\n4 Seyfert";
+    const char *legend_text = "1 Real (blue)\n2 Uniform (red)\n3 Both\n4 Redshift";
     DrawTextEx(app_state->main_font, legend_text,
                (Vector2){(f32)legend_text_x, (f32)legend_text_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 }

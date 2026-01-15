@@ -192,6 +192,6 @@ typedef struct
 } app_state_t;
 
 global_variable const ul MAX_DATA_POINTS = 100000UL;
-global_variable const ul MAX_REDSHIFT_GALAXIES = 2000UL;
+global_variable const ul MAX_REDSHIFT_GALAXIES = 100000UL;
 
 #endif

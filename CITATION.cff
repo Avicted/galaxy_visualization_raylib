@@ -1,0 +1,68 @@
+cff-version: 1.2.0
+title: "Galaxy Visualization"
+message: "This repository provides code and a cleaned/derived galaxy redshift dataset. 
+All original data remain the property of the respective surveys and authors. 
+If you use the derived dataset, please cite both the original surveys and this repository for the code/derived dataset."
+type: software
+
+authors:
+  - family-names: Anderssén
+    given-names: Victor
+
+references:
+  # CfA Redshift Survey
+  - type: article
+    title: "A survey of galaxy redshifts. I"
+    authors:
+      - family-names: Huchra
+        given-names: John
+      - family-names: Davis
+        given-names: Marc
+      - family-names: Latham
+        given-names: David
+      - family-names: Tonry
+        given-names: John
+    journal: "Astrophysical Journal Supplement Series"
+    year: 1983
+    volume: 52
+    pages: 89
+    url: "https://ui.adsabs.harvard.edu/abs/1983ApJS...52...89H"
+    note: "Original data source; must be cited when using redshift data from this repository."
+
+  # SAGA Survey
+  - type: article
+    title: "The SAGA Survey. III. A Census of 101 Satellite Systems around Milky Way–mass Galaxies"
+    authors:
+      - family-names: Mao
+        given-names: Yao-Yuan
+      - family-names: Geha
+        given-names: Marla
+      - family-names: Wechsler
+        given-names: Risa H.
+      - family-names: Asali
+        given-names: Yasmeen
+      - family-names: Wang
+        given-names: Yunchong
+      - family-names: Kado-Fong
+        given-names: Erin
+      - family-names: Kallivayalil
+        given-names: Nitya
+      - family-names: Nadler
+        given-names: Ethan O.
+      - family-names: Tollerud
+        given-names: Erik J.
+      - family-names: Weiner
+        given-names: Benjamin
+      - family-names: de los Reyes
+        given-names: Mithi A. C.
+      - family-names: Wu
+        given-names: John F.
+    journal: "The Astrophysical Journal"
+    year: 2024
+    volume: 976
+    issue: 1
+    eid: 117
+    doi: "10.3847/1538-4357/ad64c4"
+    url: "https://ui.adsabs.harvard.edu/abs/2024ApJ...976..117M"
+    arxiv: "https://arxiv.org/abs/2404.14498"
+    note: "Original data source; must be cited when using redshift data from this repository."

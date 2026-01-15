@@ -5,6 +5,7 @@
 global_variable const char *DATA_A_FILENAME = "./input_data/data_100k_arcmin.txt";
 global_variable const char *DATA_B_FILENAME = "./input_data/flat_100k_arcmin.txt";
 global_variable const char *REDSHIFT_DATA_FILENAME = "./input_data/redshift_input_data/seyfert.dat";
+global_variable const char *SAGA_DR3_FILENAME = "./input_data/redshift_input_data/saga-dr3-satellites.txt";
 
 usize data_loader_read_arcmin_file(const char *file_name, arcmin_data_t *data_points, ul max_points)
 {
@@ -194,6 +195,121 @@ usize data_loader_read_redshift_file(const char *file_name, redshift_galaxy_t *g
     return galaxy_count;
 }
 
+usize data_loader_read_saga_dr3_file(const char *file_name, redshift_galaxy_t *galaxies, ul max_galaxies)
+{
+    FILE *file = fopen(file_name, "r");
+    if (file == NULL)
+    {
+        fprintf(stderr, "[ERROR] Cannot open: %s\n", file_name);
+        return 0;
+    }
+
+    char line[512];
+    ul galaxy_count = 0;
+    ul line_number = 0;
+
+    // Skip header lines until we find the data separator line
+    // The header ends after the "---" line (line 23 in the file)
+    while (fgets(line, sizeof(line), file) != NULL)
+    {
+        line_number++;
+        // Data starts after line 23 (after the byte description table)
+        if (line_number >= 23)
+        {
+            break;
+        }
+    }
+
+    // Now read the actual data
+    while (galaxy_count < max_galaxies && fgets(line, sizeof(line), file) != NULL)
+    {
+        line_number++;
+        usize len = strlen(line);
+
+        // Skip empty lines
+        if (len < 50)
+        {
+            continue;
+        }
+
+        // Parse the fixed-width format according to the byte description:
+        // Bytes  1-18:  OBJID (unique galaxy identifier)
+        // Bytes 20-28:  HOSTID
+        // Bytes 30-36:  PGC
+        // Bytes 38-48:  RAdeg (Right ascension in decimal degrees)
+        // Bytes 50-60:  DEdeg (Declination in decimal degrees)
+        // Bytes 62-67:  rmag (apparent r-band magnitude)
+        // ... more columns ...
+        // Bytes 126-132: z (Spectroscopic redshift, -1 if not measured)
+
+        char line_copy[512];
+        strncpy(line_copy, line, 511);
+        line_copy[511] = '\0';
+
+        char *tokens[20] = {0};
+        i32 token_count = 0;
+        char *token = strtok(line_copy, " \t\n\r");
+        while (token != NULL && token_count < 20)
+        {
+            tokens[token_count++] = token;
+            token = strtok(NULL, " \t\n\r");
+        }
+
+        // Need at least: OBJID, HOSTID, PGC, RA, DEC, rmag, e_rmag, gr, rmag-fiber, sb, ba, PA, Sersic, TELNAME, z
+        // That's 15 tokens minimum
+        if (token_count < 15)
+        {
+            continue;
+        }
+
+        // Extract redshift (token 14, 0-indexed)
+        f64 redshift = strtod(tokens[14], NULL);
+
+        // Skip invalid redshifts (-1 means not measured)
+        if (redshift <= 0.0 || redshift > 1.0)
+        {
+            continue;
+        }
+
+        // Convert redshift to heliocentric velocity: v = z * c
+        f64 velocity = redshift * SPEED_OF_LIGHT_KMS;
+
+        // Skip very nearby galaxies (velocity threshold similar to seyfert parser)
+        if (velocity <= MIN_VELOCITY_THRESHOLD)
+        {
+            continue;
+        }
+
+        // Extract RA and DEC (already in decimal degrees)
+        f64 ra = strtod(tokens[3], NULL);
+        f64 dec = strtod(tokens[4], NULL);
+
+        // Validate coordinates
+        if (ra < 0.0 || ra > 360.0 || dec < -90.0 || dec > 90.0)
+        {
+            continue;
+        }
+
+        // Extract magnitude (rmag, token 5)
+        f64 magnitude = strtod(tokens[5], NULL);
+
+        // Build galaxy name from OBJID (first 15 chars)
+        strncpy(galaxies[galaxy_count].name, tokens[0], 15);
+        galaxies[galaxy_count].name[15] = '\0';
+
+        galaxies[galaxy_count].right_ascension = ra;
+        galaxies[galaxy_count].declination = dec;
+        galaxies[galaxy_count].helio_velocity = velocity;
+        galaxies[galaxy_count].b_magnitude = magnitude;
+
+        galaxy_count++;
+    }
+
+    fclose(file);
+    printf("[INFO]  Loaded %lu SAGA DR3 galaxies\n", galaxy_count);
+    return galaxy_count;
+}
+
 i32 data_loader_load_all(app_state_t *app_state)
 {
     app_state->data_points_a = (arcmin_data_t *)calloc(MAX_DATA_POINTS, sizeof(arcmin_data_t));
@@ -250,7 +366,20 @@ i32 data_loader_load_all(app_state_t *app_state)
     }
     app_state->cpu_memory_allocated += (usize)MAX_REDSHIFT_GALAXIES * sizeof(redshift_galaxy_t);
 
+    // Load Seyfert redshift data first
     usize redshift_count = data_loader_read_redshift_file(REDSHIFT_DATA_FILENAME, app_state->redshift_galaxies, MAX_REDSHIFT_GALAXIES);
+    printf("[INFO]  Seyfert galaxies: %zu\n", redshift_count);
+
+    // Load SAGA DR3 data and append to the array
+    usize remaining_space = MAX_REDSHIFT_GALAXIES - redshift_count;
+    if (remaining_space > 0)
+    {
+        usize saga_count = data_loader_read_saga_dr3_file(SAGA_DR3_FILENAME,
+                                                          &app_state->redshift_galaxies[redshift_count],
+                                                          remaining_space);
+        redshift_count += saga_count;
+    }
+
     app_state->redshift_galaxy_count = (ul)redshift_count;
 
     if (app_state->redshift_galaxy_count == 0)
