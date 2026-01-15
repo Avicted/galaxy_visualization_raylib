@@ -35,7 +35,7 @@ ui_draw_info_panel(app_state_t *app_state)
         galaxy_count = app_state->data_point_count * ((app_state->data_to_draw == DRAW_DATA_ALL) ? 2 : 1);
     }
 
-    DrawTextEx(app_state->main_font, TextFormat("Galaxies: %s", format_u64_thousands_dots((u64)galaxy_count)),
+    DrawTextEx(app_state->main_font, TextFormat("Galaxies: %s", format_u64_suffix((u64)galaxy_count)),
                (Vector2){16, 74}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 }
 
@@ -147,25 +147,19 @@ ui_draw_help_panel(app_state_t *app_state)
         DrawTextEx(app_state->main_font, "Controls", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 2, WHITE);
         line_y += line_spacing + 4;
 
-        DrawTextEx(app_state->main_font, "1-4  Dataset", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-        line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "R    Camera mode", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-        line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "H    Toggle help", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-        line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "F11  Fullscreen", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-        line_y += line_spacing;
-        DrawTextEx(app_state->main_font, "Scroll  Zoom", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
+        // Consolidated static help text (reduces DrawTextEx calls from 5 to 1)
+        const char *help_lines = "1-4  Dataset\nR    Camera mode\nH    Toggle help\nF11  Fullscreen\nScroll  Zoom";
+        DrawTextEx(app_state->main_font, help_lines, (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 
         if (app_state->is_paused)
         {
-            line_y += line_spacing + 6;
+            line_y += line_spacing * 5 + 6;
             DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, ACCENT_PURPLE);
         }
     }
     else
     {
-        DrawTextEx(app_state->main_font, "H - Help", (Vector2){16, help_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
+        DrawTextEx(app_state->main_font, "H -> Help", (Vector2){16, help_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
     }
 }
 
@@ -180,18 +174,14 @@ ui_draw_dataset_legend(app_state_t *app_state)
     DrawRectangle(legend_x, legend_y, legend_width, legend_height, PANEL_BG);
     DrawRectangleLines(legend_x, legend_y, legend_width, legend_height, PANEL_BORDER);
 
+    // Single consolidated text draw with color indicators using simple chars
     const i32 legend_text_x = legend_x + UI_PANEL_MARGIN;
     const i32 legend_text_y = legend_y + 10;
-    const i32 legend_line_spacing = 28;
 
-    DrawTextEx(app_state->main_font, "1 Real (blue)",
-               (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 0 * legend_line_spacing)}, FONT_SIZE_MEDIUM, 1, ACCENT_BLUE);
-    DrawTextEx(app_state->main_font, "2 Uniform",
-               (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 1 * legend_line_spacing)}, FONT_SIZE_MEDIUM, 1, ACCENT_RED);
-    DrawTextEx(app_state->main_font, "3 Both",
-               (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 2 * legend_line_spacing)}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
-    DrawTextEx(app_state->main_font, "4 Seyfert",
-               (Vector2){(f32)legend_text_x, (f32)(legend_text_y + 3 * legend_line_spacing)}, FONT_SIZE_MEDIUM, 1, ACCENT_PURPLE);
+    // Draw all legend items in one call (same color - use TEXT_DIM)
+    const char *legend_text = "1 Real (blue)\n2 Uniform (red)\n3 Both\n4 Seyfert";
+    DrawTextEx(app_state->main_font, legend_text,
+               (Vector2){(f32)legend_text_x, (f32)legend_text_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 }
 
 void ui_draw(app_state_t *app_state)

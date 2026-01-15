@@ -28,9 +28,6 @@ i32 shaders_init(app_state_t *app_state)
         galaxy_material.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;
         galaxy_material.maps[MATERIAL_MAP_SPECULAR].value = 0.0f;
 
-        f32 shininess = SHININESS_DEFAULT;
-        SetShaderValue(galaxy_material.shader, GetShaderLocation(galaxy_material.shader, "shininess"), &shininess, SHADER_UNIFORM_FLOAT);
-
         app_state->material_instance = galaxy_material;
         app_state->material_instance.shader = app_state->custom_shader;
         app_state->material_instance.maps[MATERIAL_MAP_DIFFUSE].color = WHITE;

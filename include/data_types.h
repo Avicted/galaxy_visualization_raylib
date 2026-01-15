@@ -45,9 +45,11 @@
 #define REDSHIFT_PITCH_AMPLITUDE 70.0f
 
 // Rendering constants
-#define SPHERE_MESH_RADIUS 0.2f
+#define SPHERE_MESH_RADIUS 0.25f
 #define SPHERE_MESH_RINGS 4
 #define SPHERE_MESH_SLICES 4
+#define SPHERE_LOWPOLY_RINGS 3
+#define SPHERE_LOWPOLY_SLICES 3
 #define CUBE_MESH_SIZE 1.0f
 #define EARTH_SCALE 1.0f
 #define EARTH_MODEL_SCALE 0.01f
@@ -65,8 +67,8 @@
 #define RENDER_DISTANCE_MIN 200.0
 #define RENDER_DISTANCE_RANGE 600.0
 #define RENDER_DISTANCE_MAX (RENDER_DISTANCE_MIN + RENDER_DISTANCE_RANGE)
-#define DISTANCE_SIZE_SCALE_MIN 0.5
-#define DISTANCE_SIZE_SCALE_MAX 3.0
+#define DISTANCE_SIZE_SCALE_MIN 2.0
+#define DISTANCE_SIZE_SCALE_MAX 8.0
 #define COLOR_VELOCITY_BASE 1000.0
 #define COLOR_VELOCITY_RANGE 85000.0
 #define COLOR_THRESHOLD_LOW 0.33
@@ -95,7 +97,7 @@
 
 // Font constants
 #define FONT_LOAD_SIZE 128
-#define FONT_GLYPH_COUNT 250
+#define FONT_GLYPH_COUNT 95 // ASCII 32-126 only (faster GetGlyphIndex lookup)
 #define FONT_SIZE_LARGE 32
 #define FONT_SIZE_MEDIUM 24
 
@@ -170,14 +172,18 @@ typedef struct
     Vector3 camera_direction;
 
     Shader custom_shader;
-    Mesh sphere_mesh;
-    Mesh cube_mesh;
+    Mesh sphere_mesh_lowpoly;
     Model earth_model;
 
     Material material_instance;
     Material redshift_material;
     Matrix *matrix_transforms_a;
     Matrix *matrix_transforms_b;
+
+    // Static GPU instance buffers (uploaded once, reused every frame)
+    u32 instance_vbo_a;
+    u32 instance_vbo_b;
+    u32 instance_vbo_redshift;
 
     redshift_galaxy_t *redshift_galaxies;
     Matrix *matrix_transforms_redshift;

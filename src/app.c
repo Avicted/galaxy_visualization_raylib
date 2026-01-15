@@ -13,7 +13,6 @@ app_init_platform(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-
     InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
 
     SetWindowIcon(LoadImage("./assets/images/app_icon.png"));
@@ -134,7 +133,7 @@ i32 app_init(app_state_t *app_state)
     app_state->window_height = INITIAL_WINDOW_HEIGHT;
     app_state->debug = prev_debug;
     app_state->cursor_enabled = true;
-    app_state->show_help = true;
+    app_state->show_help = false; // Hidden by default for better performance
 
     app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     app_state->main_camera.fovy = CAMERA_FOV;
@@ -168,12 +167,17 @@ i32 app_init(app_state_t *app_state)
 
     app_state->main_font = LoadFontEx("./assets/fonts/Perfect DOS VGA 437.ttf", FONT_LOAD_SIZE, 0, FONT_GLYPH_COUNT);
 
-    app_state->sphere_mesh = GenMeshSphere(SPHERE_MESH_RADIUS, SPHERE_MESH_RINGS, SPHERE_MESH_SLICES);
-    app_state->cube_mesh = GenMeshCube(CUBE_MESH_SIZE, CUBE_MESH_SIZE, CUBE_MESH_SIZE);
+    app_state->sphere_mesh_lowpoly = GenMeshSphere(SPHERE_MESH_RADIUS, SPHERE_LOWPOLY_RINGS, SPHERE_LOWPOLY_SLICES);
 
     if (shaders_init(app_state) != 0)
     {
         fprintf(stderr, "[ERROR] Failed to initialize shaders\n");
+        return 1;
+    }
+
+    if (transforms_upload_instance_vbos(app_state) != 0)
+    {
+        fprintf(stderr, "[ERROR] Failed to upload instance VBOs to GPU\n");
         return 1;
     }
 
@@ -203,17 +207,15 @@ void app_cleanup(app_state_t *app_state)
         return;
     }
 
+    transforms_cleanup_instance_vbos(app_state);
+
     if (app_state->earth_model.meshCount > 0)
     {
         UnloadModel(app_state->earth_model);
     }
-    if (app_state->sphere_mesh.vboId)
+    if (app_state->sphere_mesh_lowpoly.vboId)
     {
-        UnloadMesh(app_state->sphere_mesh);
-    }
-    if (app_state->cube_mesh.vboId)
-    {
-        UnloadMesh(app_state->cube_mesh);
+        UnloadMesh(app_state->sphere_mesh_lowpoly);
     }
     if (app_state->material_instance.shader.id)
     {

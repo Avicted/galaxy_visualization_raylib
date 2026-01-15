@@ -1,6 +1,7 @@
 #include "transforms.h"
 #include "includes.h"
 #include "macros.h"
+#include "rlgl.h"
 
 f64 transforms_distance_from_velocity(f64 velocity_km_s)
 {
@@ -55,30 +56,42 @@ i32 transforms_init_course_data(app_state_t *app_state)
 {
     for (ul i = 0; i < app_state->data_point_count; ++i)
     {
+        // Dataset A transforms
         {
             const f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / ARCMIN_TO_DEGREES) * DEG2RAD;
             const f64 declination_rad = (app_state->data_points_a[i].declination / ARCMIN_TO_DEGREES) * DEG2RAD;
             const f64 radius = COURSE_DATA_RADIUS;
-            const f64 x = radius * cos(right_ascension_rad) * cos(declination_rad);
+            const f64 cos_dec = cos(declination_rad);
+            const f64 x = radius * cos(right_ascension_rad) * cos_dec;
             const f64 y = radius * sin(declination_rad);
-            const f64 z = radius * sin(right_ascension_rad) * cos(declination_rad);
+            const f64 z = radius * sin(right_ascension_rad) * cos_dec;
 
-            app_state->matrix_transforms_a[i] = MatrixIdentity();
-            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE));
-            app_state->matrix_transforms_a[i] = MatrixMultiply(app_state->matrix_transforms_a[i], MatrixTranslate((f32)x, (f32)y, (f32)z));
+            // Build transform directly instead of multiple matrix multiplies
+            Matrix transform = MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE);
+            transform.m12 = (f32)x;
+            transform.m13 = (f32)y;
+            transform.m14 = (f32)z;
+
+            app_state->matrix_transforms_a[i] = transform;
         }
 
+        // Dataset B transforms
         {
             const f64 right_ascension_rad = (app_state->data_points_b[i].right_ascension / ARCMIN_TO_DEGREES) * DEG2RAD;
             const f64 declination_rad = (app_state->data_points_b[i].declination / ARCMIN_TO_DEGREES) * DEG2RAD;
             const f64 radius = COURSE_DATA_RADIUS;
-            const f64 x = radius * cos(right_ascension_rad) * cos(declination_rad);
+            const f64 cos_dec = cos(declination_rad);
+            const f64 x = radius * cos(right_ascension_rad) * cos_dec;
             const f64 y = radius * sin(declination_rad);
-            const f64 z = radius * sin(right_ascension_rad) * cos(declination_rad);
+            const f64 z = radius * sin(right_ascension_rad) * cos_dec;
 
-            app_state->matrix_transforms_b[i] = MatrixIdentity();
-            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE));
-            app_state->matrix_transforms_b[i] = MatrixMultiply(app_state->matrix_transforms_b[i], MatrixTranslate((f32)x, (f32)y, (f32)z));
+            // Build transform directly instead of multiple matrix multiplies
+            Matrix transform = MatrixScale(COURSE_DATA_SCALE, COURSE_DATA_SCALE, COURSE_DATA_SCALE);
+            transform.m12 = (f32)x;
+            transform.m13 = (f32)y;
+            transform.m14 = (f32)z;
+
+            app_state->matrix_transforms_b[i] = transform;
         }
     }
 
@@ -121,7 +134,19 @@ i32 transforms_init_redshift_data(app_state_t *app_state)
             app_state->matrix_transforms_redshift[i],
             MatrixTranslate((f32)x, (f32)y, (f32)z));
 
-        app_state->redshift_galaxy_colors[i] = transforms_color_from_velocity(galaxy->helio_velocity);
+        Color color = transforms_color_from_velocity(galaxy->helio_velocity);
+        // Apply brightness boost
+        color.r = (u8)fmin(255, color.r + COLOR_BRIGHTNESS_BOOST);
+        color.g = (u8)fmin(255, color.g + COLOR_BRIGHTNESS_BOOST);
+        color.b = (u8)fmin(255, color.b + COLOR_BRIGHTNESS_BOOST);
+        app_state->redshift_galaxy_colors[i] = color;
+
+        // Encode color into matrix for GPU instancing
+        // Use m1, m2, m4 - these are off-diagonal rotation elements (zero in scale+translate)
+        // Raylib Matrix is row-major: m1=[row0,col1], m2=[row0,col2], m4=[row1,col0]
+        app_state->matrix_transforms_redshift[i].m1 = (f32)color.r / 255.0f;
+        app_state->matrix_transforms_redshift[i].m2 = (f32)color.g / 255.0f;
+        app_state->matrix_transforms_redshift[i].m4 = (f32)color.b / 255.0f;
     }
 
     return 0;
@@ -179,4 +204,80 @@ i32 transforms_upload_to_gpu(app_state_t *app_state)
     }
 
     return 0;
+}
+
+// Upload instance transforms to GPU as static VBOs (called after OpenGL context is ready)
+i32 transforms_upload_instance_vbos(app_state_t *app_state)
+{
+    // Convert matrices to float16 format (column-major for OpenGL)
+    // This is what raylib does every frame - we do it once
+    float16 *instance_data_a = (float16 *)RL_MALLOC(app_state->data_point_count * sizeof(float16));
+    float16 *instance_data_b = (float16 *)RL_MALLOC(app_state->data_point_count * sizeof(float16));
+
+    if (!instance_data_a || !instance_data_b)
+    {
+        fprintf(stderr, "[ERROR] Failed to allocate instance data buffers\n");
+        return 1;
+    }
+
+    for (ul i = 0; i < app_state->data_point_count; i++)
+    {
+        instance_data_a[i] = MatrixToFloatV(app_state->matrix_transforms_a[i]);
+        instance_data_b[i] = MatrixToFloatV(app_state->matrix_transforms_b[i]);
+    }
+
+    // Upload to GPU as static VBOs
+    app_state->instance_vbo_a = rlLoadVertexBuffer(instance_data_a,
+                                                   app_state->data_point_count * sizeof(float16), false);
+    app_state->instance_vbo_b = rlLoadVertexBuffer(instance_data_b,
+                                                   app_state->data_point_count * sizeof(float16), false);
+
+    RL_FREE(instance_data_a);
+    RL_FREE(instance_data_b);
+
+    printf("[INFO]  Static instance VBOs uploaded: A=%u, B=%u\n",
+           app_state->instance_vbo_a, app_state->instance_vbo_b);
+
+    // Upload redshift data if available
+    if (app_state->redshift_galaxy_count > 0)
+    {
+        float16 *instance_data_redshift = (float16 *)RL_MALLOC(app_state->redshift_galaxy_count * sizeof(float16));
+        if (!instance_data_redshift)
+        {
+            fprintf(stderr, "[ERROR] Failed to allocate redshift instance data\n");
+            return 1;
+        }
+
+        for (ul i = 0; i < app_state->redshift_galaxy_count; i++)
+        {
+            instance_data_redshift[i] = MatrixToFloatV(app_state->matrix_transforms_redshift[i]);
+        }
+
+        app_state->instance_vbo_redshift = rlLoadVertexBuffer(instance_data_redshift,
+                                                              app_state->redshift_galaxy_count * sizeof(float16), false);
+
+        RL_FREE(instance_data_redshift);
+        printf("[INFO]  Redshift instance VBO uploaded: %u\n", app_state->instance_vbo_redshift);
+    }
+
+    return 0;
+}
+
+void transforms_cleanup_instance_vbos(app_state_t *app_state)
+{
+    if (app_state->instance_vbo_a)
+    {
+        rlUnloadVertexBuffer(app_state->instance_vbo_a);
+        app_state->instance_vbo_a = 0;
+    }
+    if (app_state->instance_vbo_b)
+    {
+        rlUnloadVertexBuffer(app_state->instance_vbo_b);
+        app_state->instance_vbo_b = 0;
+    }
+    if (app_state->instance_vbo_redshift)
+    {
+        rlUnloadVertexBuffer(app_state->instance_vbo_redshift);
+        app_state->instance_vbo_redshift = 0;
+    }
 }
