@@ -48,15 +48,3 @@ i32 shaders_init(app_state_t *app_state)
 
     return 0;
 }
-
-i32 shaders_init_platform(app_state_t *app_state)
-{
-    SetTraceLogLevel(LOG_WARNING);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-
-    InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
-
-    SetWindowIcon(LoadImage("./assets/images/app_icon.png"));
-
-    return 0;
-}

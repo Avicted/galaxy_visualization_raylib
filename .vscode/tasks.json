@@ -18,7 +18,7 @@
         {
             "label": "Meson Compile",
             "type": "shell",
-            "command": "meson compile -C build",
+            "command": "CC=clang meson setup --reconfigure build && meson compile -C build",
             "args": [],
             "options": {
                 "cwd": "${workspaceFolder}",

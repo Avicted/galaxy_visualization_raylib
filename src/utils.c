@@ -36,5 +36,5 @@ format_u64_thousands_dots(u64 value)
 
 void print_memory_usage(app_state_t *app_state)
 {
-    printf("[INFO]  Memory: %.3f MB\n", (f64)app_state->cpu_memory_allocated / (f64)Megabytes(1));
+    printf("[INFO]  Memory: %.2fMB\n", (f64)app_state->cpu_memory_allocated / (f64)MegaBytes(1));
 }
