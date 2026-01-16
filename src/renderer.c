@@ -8,6 +8,11 @@
 // This avoids the per-frame allocation and VBO creation that raylib's DrawMeshInstanced does
 void renderer_draw_mesh_instanced_static(Mesh mesh, Material material, u32 instance_vbo, i32 instances)
 {
+    if (material.shader.id == 0 || material.shader.locs == NULL)
+    {
+        return;
+    }
+
     // Bind shader program
     rlEnableShader(material.shader.id);
 

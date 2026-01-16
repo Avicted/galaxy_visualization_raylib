@@ -91,6 +91,21 @@
             "detail": "Compile embedded build with raylib linked statically"
         },
         {
+            "label": "Meson Compile (Windows Embedded + Static Raylib)",
+            "type": "shell",
+            "command": "meson setup --reconfigure build_mingw_embedded_static --cross-file ./cross/mingw64.ini -Dembed_assets=true -Draylib_static=true && meson compile -C build_mingw_embedded_static",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Cross-compile Windows embedded build with static raylib"
+        },
+        {
             "label": "Build (Embedded via build.sh)",
             "type": "shell",
             "command": "./build.sh --embed",
@@ -134,6 +149,21 @@
                 "isDefault": false
             },
             "detail": "Build embedded binary with raylib linked statically using build.sh"
+        },
+        {
+            "label": "Build (Windows Embedded via build.sh)",
+            "type": "shell",
+            "command": "./build.sh --mingw",
+            "args": [],
+            "options": {
+                "cwd": "${workspaceFolder}"
+            },
+            "problemMatcher": [],
+            "group": {
+                "kind": "build",
+                "isDefault": false
+            },
+            "detail": "Cross-compile Windows .exe with embedded assets and static raylib"
         }
     ],
     "version": "2.0.0"

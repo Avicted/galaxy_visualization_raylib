@@ -1,11 +1,17 @@
 #include "shaders.h"
 #include "asset_io.h"
+#include "includes.h"
 #define RLIGHTS_IMPLEMENTATION
 #include "../vendor/rlights.h"
 
 i32 shaders_init(app_state_t *app_state)
 {
     app_state->custom_shader = asset_io_load_shader(ASSET_SHADER_LIGHTING_INSTANCING_VS, ASSET_SHADER_LIGHTING_FS);
+    if (app_state->custom_shader.id == 0 || app_state->custom_shader.locs == NULL)
+    {
+        fprintf(stderr, "[ERROR] Failed to load custom shader\n");
+        return 1;
+    }
     app_state->custom_shader.locs[SHADER_LOC_MATRIX_MVP] = GetShaderLocation(app_state->custom_shader, "mvp");
     app_state->custom_shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(app_state->custom_shader, "viewPos");
     app_state->custom_shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(app_state->custom_shader, "instanceTransform");

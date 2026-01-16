@@ -6,16 +6,6 @@ raylib_inc = include_directories(
   'src/external/glfw/src'
 )
 
-raylib_c_args = [
-  '-D_GNU_SOURCE',
-  '-DPLATFORM_DESKTOP',
-  '-DGRAPHICS_API_OPENGL_33',
-  '-D_GLFW_X11',
-  '-Wno-missing-braces',
-  '-Werror=pointer-arith',
-  '-fno-strict-aliasing',
-]
-
 raylib_sources = files(
   'src/rcore.c',
   'src/rmodels.c',
@@ -27,18 +17,48 @@ raylib_sources = files(
   'src/utils.c'
 )
 
-raylib_libs = [
-  '-lGL',
-  '-lX11',
-  '-lXrandr',
-  '-lXinerama',
-  '-lXi',
-  '-lXcursor',
-  '-lm',
-  '-lpthread',
-  '-ldl',
-  '-lrt',
-]
+host_system = host_machine.system()
+
+if host_system == 'windows'
+  raylib_c_args = [
+    '-DPLATFORM_DESKTOP',
+    '-DGRAPHICS_API_OPENGL_33',
+    '-D_GLFW_WIN32',
+    '-Wno-missing-braces',
+    '-Werror=pointer-arith',
+    '-fno-strict-aliasing',
+  ]
+  raylib_libs = [
+    '-lopengl32',
+    '-lgdi32',
+    '-lwinmm',
+    '-lshell32',
+    '-luser32',
+    '-lkernel32',
+  ]
+else
+  raylib_c_args = [
+    '-D_GNU_SOURCE',
+    '-DPLATFORM_DESKTOP',
+    '-DGRAPHICS_API_OPENGL_33',
+    '-D_GLFW_X11',
+    '-Wno-missing-braces',
+    '-Werror=pointer-arith',
+    '-fno-strict-aliasing',
+  ]
+  raylib_libs = [
+    '-lGL',
+    '-lX11',
+    '-lXrandr',
+    '-lXinerama',
+    '-lXi',
+    '-lXcursor',
+    '-lm',
+    '-lpthread',
+    '-ldl',
+    '-lrt',
+  ]
+endif
 
 raylib_lib = static_library(
   'raylib',

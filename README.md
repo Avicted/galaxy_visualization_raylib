@@ -16,8 +16,7 @@ The students must leverage the GPU for these calculations on their own using a s
 
 ## Prerequisites
 
-This project can be built using clang/gcc through build.sh (raylib is the only dependency) or use Meson as the build system.
-
+This project can be built using clang/gcc through build.sh (raylib is the only dependency) or Meson as the build system.
 
 ## Dependencies
 
@@ -97,13 +96,33 @@ meson subprojects download raylib
 meson setup build_embedded_static -Dembed_assets=true -Draylib_static=true
 meson compile -C build_embedded_static
 
+# Clean
+meson compile -C build --clean
+```
+
 If your system package does not provide a static raylib, use the Meson wrap subproject:
 
 - Run: `meson subprojects download raylib`
 - Meson will use the subproject when `-Draylib_static=true` is used
+```
 
-# Clean
-meson compile -C build --clean
+### Cross-compiling for Windows (mingw64)
+
+Install a mingw64 toolchain, then:
+
+```bash
+# Download raylib subproject (required for static linking)
+meson subprojects download raylib
+
+# Configure and build Windows .exe (embedded + static raylib)
+meson setup build_mingw_embedded_static --cross-file ./cross/mingw64.ini -Dembed_assets=true -Draylib_static=true
+meson compile -C build_mingw_embedded_static
+```
+
+Or using build.sh:
+
+```bash
+./build.sh --mingw
 ```
 
 ### Build Options
@@ -113,6 +132,9 @@ meson compile -C build --clean
 | Normal | External assets required | ~45 KB |
 | Embedded (`--embed` or `-Dembed_assets=true`) | All assets compressed into binary | ~6 MB |
 | Static raylib (`--static` or `-Draylib_static=true`) | raylib linked statically, system libs dynamic | Varies |
+
+Notes:
+- Windows cross-builds avoid `-march=native` to maximize compatibility (e.g., Wine).
 
 The embedded binary includes:
 - Fonts, shaders, and 3D models

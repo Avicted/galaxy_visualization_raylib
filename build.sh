@@ -7,6 +7,7 @@ EMBED_ASSETS=false
 CLEAN=false
 RUN=false
 STATIC_RAYLIB=false
+MINGW=false
 
 for arg in "$@"; do
     case $arg in
@@ -22,12 +23,16 @@ for arg in "$@"; do
         --static)
             STATIC_RAYLIB=true
             ;;
+        --mingw|--windows)
+            MINGW=true
+            ;;
         --help|-h)
             echo "Usage: ./build.sh [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --embed, --embedded  Build single-binary with all assets embedded"
             echo "  --static             Link raylib statically (system libs remain dynamic)"
+            echo "  --mingw, --windows    Cross-compile Windows .exe (embedded + static raylib)"
             echo "  --clean              Clean build directory before building"
             echo "  --run                Run the executable after building"
             echo "  --help, -h           Show this help message"
@@ -44,6 +49,12 @@ done
 CC=clang
 CFLAGS="-std=c99 -O3 -march=native -Wall -Wextra -Werror -Wpedantic"
 LDLIBS="-lm"
+
+APP_VERSION=$(sed -nE "s/.*version[[:space:]]*:[[:space:]]*'([^']+)'.*/\1/p" meson.build | head -n 1)
+if [ -z "$APP_VERSION" ]; then
+    APP_VERSION="0.0.0"
+fi
+CFLAGS="$CFLAGS -DAPP_VERSION=\"$APP_VERSION\""
 
 PKG_CONFIG_BIN="pkg-config"
 RAYLIB_SUBPROJECT_DIR="./subprojects/raylib"
@@ -87,6 +98,32 @@ if [ "$EMBED_ASSETS" = true ]; then
     OUTPUT_DIR="./build_embedded"
     CFLAGS="$CFLAGS -DEMBED_ASSETS"
     INCLUDE_DIRS="$INCLUDE_DIRS -I$OUTPUT_DIR"
+fi
+
+if [ "$MINGW" = true ]; then
+    if [ "$RUN" = true ]; then
+        echo "[WARN] Cannot run Windows .exe on Linux. Skipping run."
+        RUN=false
+    fi
+
+    EMBED_ASSETS=true
+    STATIC_RAYLIB=true
+    OUTPUT_DIR="./build_mingw_embedded_static"
+
+    echo "=== Cross-compiling Windows (mingw64) ==="
+    if [ -d "./subprojects/raylib" ]; then
+        rm -rf ./subprojects/raylib
+    fi
+    meson subprojects download raylib
+    meson setup --reconfigure "$OUTPUT_DIR" \
+        --cross-file ./cross/mingw64.ini \
+        -Dembed_assets=true \
+        -Draylib_static=true
+    meson compile -C "$OUTPUT_DIR"
+    echo ""
+    echo "=== Build complete! ==="
+    ls -lh "$OUTPUT_DIR/galaxy_visualization_raylib.exe"
+    exit 0
 fi
 
 # Clean if requested or if switching build types

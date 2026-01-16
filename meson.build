@@ -1,5 +1,5 @@
 project('galaxy_visualization_raylib', 'c',
-  version : '0.3.0',
+  version : '0.4.0',
   default_options : [
     'c_std=c99',
     
@@ -28,7 +28,12 @@ else
 endif
 
 embed_assets = get_option('embed_assets')
-extra_c_args = []
+extra_c_args = ['-DAPP_VERSION="' + meson.project_version() + '"']
+platform_c_args = []
+
+if host_machine.system() != 'windows'
+  platform_c_args += ['-march=native']
+endif
 
 # Generate embedded asset headers at configure time
 if embed_assets
@@ -48,8 +53,7 @@ exe = executable(
     sources,
     dependencies: raylib_dep,
     c_args: [
-      '-march=native',
-    ] + extra_c_args,
+    ] + platform_c_args + extra_c_args,
     link_args : [
       '-lm',
     ],
