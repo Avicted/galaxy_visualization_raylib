@@ -1,17 +1,7 @@
 #include "data_loader.h"
 #include "includes.h"
 #include "macros.h"
-
-#ifdef EMBED_ASSETS
-#include "embedded_assets.h"
-#endif
-
-global_variable const char *DATA_A_FILENAME = "./input_data/data_100k_arcmin.txt";
-global_variable const char *DATA_B_FILENAME = "./input_data/flat_100k_arcmin.txt";
-global_variable const char *REDSHIFT_DATA_FILENAME = "./input_data/redshift_input_data/seyfert.dat";
-global_variable const char *SAGA_DR3_FILENAME = "./input_data/redshift_input_data/saga-dr3-satellites.txt";
-
-#ifdef EMBED_ASSETS
+#include "asset_io.h"
 // Helper: Get next line from a memory buffer
 // Returns pointer to start of line, advances *pos past the newline
 // Returns NULL if no more lines
@@ -56,7 +46,7 @@ data_loader_read_arcmin_from_memory(const char *data, size_t data_size, arcmin_d
     // Skip header line
     if (mem_getline(data, data_size, &pos, line, sizeof(line)) == NULL)
     {
-        fprintf(stderr, "[ERROR] Cannot read header from embedded data\n");
+        fprintf(stderr, "[ERROR] Cannot read header from memory data\n");
         return 0;
     }
 
@@ -213,7 +203,7 @@ data_loader_read_redshift_from_memory(const char *data, size_t data_size, redshi
         galaxy_count++;
     }
 
-    printf("[INFO]  Loaded %lu redshift galaxies (embedded)\n", galaxy_count);
+    printf("[INFO]  Loaded %lu redshift galaxies (memory)\n", galaxy_count);
     return galaxy_count;
 }
 
@@ -293,10 +283,9 @@ data_loader_read_saga_dr3_from_memory(const char *data, size_t data_size, redshi
         galaxy_count++;
     }
 
-    printf("[INFO]  Loaded %lu SAGA DR3 galaxies (embedded)\n", galaxy_count);
+    printf("[INFO]  Loaded %lu SAGA DR3 galaxies (memory)\n", galaxy_count);
     return galaxy_count;
 }
-#endif // EMBED_ASSETS
 
 usize data_loader_read_arcmin_file(const char *file_name, arcmin_data_t *data_points, ul max_points)
 {
@@ -622,79 +611,46 @@ i32 data_loader_load_all(app_state_t *app_state)
     }
     app_state->cpu_memory_allocated += (usize)MAX_DATA_POINTS * sizeof(arcmin_data_t);
 
-#ifdef EMBED_ASSETS
-    // Load from embedded compressed data
     {
-        unsigned char *data_a = NULL;
-        size_t data_a_size = 0;
-        EMBEDDED_DECOMPRESS(data_arcmin_a, &data_a, &data_a_size);
-        if (data_a != NULL)
+        asset_blob_t data_a_blob = asset_io_load_blob(ASSET_DATA_ARCMIN_A);
+        if (data_a_blob.data == NULL)
         {
-            usize count_a = data_loader_read_arcmin_from_memory((const char *)data_a, data_a_size,
-                                                                app_state->data_points_a, MAX_DATA_POINTS);
-            free(data_a);
-            if (count_a == 0)
-            {
-                fprintf(stderr, "[ERROR] Parse failed: embedded data_a\n");
-                return 1;
-            }
-            app_state->data_point_count = (ul)count_a;
-        }
-        else
-        {
-            fprintf(stderr, "[ERROR] Decompress failed: data_a\n");
+            fprintf(stderr, "[ERROR] Failed to load data set A\n");
             return 1;
         }
-    }
 
-    {
-        unsigned char *data_b = NULL;
-        size_t data_b_size = 0;
-        EMBEDDED_DECOMPRESS(data_arcmin_b, &data_b, &data_b_size);
-        if (data_b != NULL)
+        usize count_a = data_loader_read_arcmin_from_memory((const char *)data_a_blob.data, data_a_blob.size,
+                                                            app_state->data_points_a, MAX_DATA_POINTS);
+        asset_blob_free(&data_a_blob);
+        if (count_a == 0)
         {
-            usize count_b = data_loader_read_arcmin_from_memory((const char *)data_b, data_b_size,
-                                                                app_state->data_points_b, MAX_DATA_POINTS);
-            free(data_b);
-            if (count_b == 0)
-            {
-                fprintf(stderr, "[ERROR] Parse failed: embedded data_b\n");
-                return 1;
-            }
-            // Use minimum of both counts
-            if ((ul)count_b < app_state->data_point_count)
-            {
-                app_state->data_point_count = (ul)count_b;
-            }
-        }
-        else
-        {
-            fprintf(stderr, "[ERROR] Decompress failed: data_b\n");
+            fprintf(stderr, "[ERROR] Parse failed: data set A\n");
             return 1;
         }
-    }
-#else
-    usize count_a = data_loader_read_arcmin_file(DATA_A_FILENAME, app_state->data_points_a, MAX_DATA_POINTS);
-    if (count_a == 0)
-    {
-        fprintf(stderr, "[ERROR] Read failed: %s\n", DATA_A_FILENAME);
-        return 1;
+        app_state->data_point_count = (ul)count_a;
     }
 
-    usize count_b = data_loader_read_arcmin_file(DATA_B_FILENAME, app_state->data_points_b, MAX_DATA_POINTS);
-    if (count_b == 0)
     {
-        fprintf(stderr, "[ERROR] Read failed: %s\n", DATA_B_FILENAME);
-        return 1;
-    }
+        asset_blob_t data_b_blob = asset_io_load_blob(ASSET_DATA_ARCMIN_B);
+        if (data_b_blob.data == NULL)
+        {
+            fprintf(stderr, "[ERROR] Failed to load data set B\n");
+            return 1;
+        }
 
-    if ((usize)count_a != (usize)count_b)
-    {
-        fprintf(stderr, "[WARN]  Dataset count mismatch: %zd vs %zd\n", count_a, count_b);
+        usize count_b = data_loader_read_arcmin_from_memory((const char *)data_b_blob.data, data_b_blob.size,
+                                                            app_state->data_points_b, MAX_DATA_POINTS);
+        asset_blob_free(&data_b_blob);
+        if (count_b == 0)
+        {
+            fprintf(stderr, "[ERROR] Parse failed: data set B\n");
+            return 1;
+        }
+        if ((ul)count_b < app_state->data_point_count)
+        {
+            app_state->data_point_count = (ul)count_b;
+        }
     }
-
-    app_state->data_point_count = (ul)MIN((usize)count_a, (usize)count_b);
-#endif
 
     if (app_state->data_point_count == 0)
     {
@@ -710,53 +666,41 @@ i32 data_loader_load_all(app_state_t *app_state)
     }
     app_state->cpu_memory_allocated += (usize)MAX_REDSHIFT_GALAXIES * sizeof(redshift_galaxy_t);
 
-#ifdef EMBED_ASSETS
     usize redshift_count = 0;
     {
-        unsigned char *seyfert_data = NULL;
-        size_t seyfert_size = 0;
-        EMBEDDED_DECOMPRESS(data_seyfert, &seyfert_data, &seyfert_size);
-        if (seyfert_data != NULL)
+        asset_blob_t seyfert_blob = asset_io_load_blob(ASSET_DATA_SEYFERT);
+        if (seyfert_blob.data != NULL)
         {
-            redshift_count = data_loader_read_redshift_from_memory((const char *)seyfert_data, seyfert_size,
+            redshift_count = data_loader_read_redshift_from_memory((const char *)seyfert_blob.data, seyfert_blob.size,
                                                                    app_state->redshift_galaxies, MAX_REDSHIFT_GALAXIES);
-            free(seyfert_data);
+            asset_blob_free(&seyfert_blob);
+        }
+        else
+        {
+            fprintf(stderr, "[WARN]  Failed to load Seyfert data\n");
         }
     }
     printf("[INFO]  Seyfert galaxies: %zu\n", redshift_count);
 
     {
-        unsigned char *saga_data = NULL;
-        size_t saga_size = 0;
-        EMBEDDED_DECOMPRESS(data_saga_dr3, &saga_data, &saga_size);
-        if (saga_data != NULL)
+        asset_blob_t saga_blob = asset_io_load_blob(ASSET_DATA_SAGA_DR3);
+        if (saga_blob.data != NULL)
         {
             usize remaining = MAX_REDSHIFT_GALAXIES - redshift_count;
             if (remaining > 0)
             {
-                usize saga_count = data_loader_read_saga_dr3_from_memory((const char *)saga_data, saga_size,
+                usize saga_count = data_loader_read_saga_dr3_from_memory((const char *)saga_blob.data, saga_blob.size,
                                                                          &app_state->redshift_galaxies[redshift_count],
                                                                          remaining);
                 redshift_count += saga_count;
             }
-            free(saga_data);
+            asset_blob_free(&saga_blob);
+        }
+        else
+        {
+            fprintf(stderr, "[WARN]  Failed to load SAGA DR3 data\n");
         }
     }
-#else
-    // Load Seyfert redshift data first
-    usize redshift_count = data_loader_read_redshift_file(REDSHIFT_DATA_FILENAME, app_state->redshift_galaxies, MAX_REDSHIFT_GALAXIES);
-    printf("[INFO]  Seyfert galaxies: %zu\n", redshift_count);
-
-    // Load SAGA DR3 data and append to the array
-    usize remaining_space = MAX_REDSHIFT_GALAXIES - redshift_count;
-    if (remaining_space > 0)
-    {
-        usize saga_count = data_loader_read_saga_dr3_file(SAGA_DR3_FILENAME,
-                                                          &app_state->redshift_galaxies[redshift_count],
-                                                          remaining_space);
-        redshift_count += saga_count;
-    }
-#endif
 
     app_state->redshift_galaxy_count = (ul)redshift_count;
 
