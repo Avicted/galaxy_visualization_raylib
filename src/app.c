@@ -21,6 +21,14 @@ app_init_platform(app_state_t *app_state)
     const char *window_title = TextFormat("Galaxy Visualization v%s", APP_VERSION);
     InitWindow(app_state->window_width, app_state->window_height, window_title);
 
+    // Set the windows size and render texture size to match the current monitor
+    const i32 current_monitor = GetCurrentMonitor();
+    const i32 monitor_width = GetMonitorWidth(current_monitor);
+    const i32 monitor_height = GetMonitorHeight(current_monitor);
+    SetWindowSize(monitor_width, monitor_height);
+    app_state->window_width = monitor_width;
+    app_state->window_height = monitor_height;
+
     {
         Image icon = asset_io_load_image(ASSET_ICON_APP, ".png");
         if (icon.data != NULL)
