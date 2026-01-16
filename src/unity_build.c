@@ -4,6 +4,7 @@
  */
 
 #include "app.c"
+#include "asset_io.c"
 #include "camera.c"
 #include "data_loader.c"
 #include "renderer.c"

@@ -1,0 +1,8 @@
+[wrap-git]
+directory = raylib
+url = https://github.com/raysan5/raylib.git
+revision = 5.5
+patch_directory = raylib-meson
+
+[provide]
+raylib = raylib_dep

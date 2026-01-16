@@ -6,6 +6,7 @@ set -e
 EMBED_ASSETS=false
 CLEAN=false
 RUN=false
+STATIC_RAYLIB=false
 
 for arg in "$@"; do
     case $arg in
@@ -18,11 +19,15 @@ for arg in "$@"; do
         --run)
             RUN=true
             ;;
+        --static)
+            STATIC_RAYLIB=true
+            ;;
         --help|-h)
             echo "Usage: ./build.sh [OPTIONS]"
             echo ""
             echo "Options:"
             echo "  --embed, --embedded  Build single-binary with all assets embedded"
+            echo "  --static             Link raylib statically (system libs remain dynamic)"
             echo "  --clean              Clean build directory before building"
             echo "  --run                Run the executable after building"
             echo "  --help, -h           Show this help message"
@@ -38,7 +43,40 @@ done
 
 CC=clang
 CFLAGS="-std=c99 -O3 -march=native -Wall -Wextra -Werror -Wpedantic"
-LDLIBS="-lm -lraylib"
+LDLIBS="-lm"
+
+PKG_CONFIG_BIN="pkg-config"
+RAYLIB_SUBPROJECT_DIR="./subprojects/raylib"
+RAYLIB_MAKE_DIR="$RAYLIB_SUBPROJECT_DIR/src"
+RAYLIB_STATIC_LIB="$RAYLIB_MAKE_DIR/libraylib.a"
+
+if [ "$STATIC_RAYLIB" = true ]; then
+    if [ ! -d "$RAYLIB_SUBPROJECT_DIR" ]; then
+        echo "[ERROR] raylib subproject not found. Run: meson subprojects download raylib"
+        exit 1
+    fi
+
+    if [ ! -f "$RAYLIB_STATIC_LIB" ]; then
+        echo "=== Building raylib static library (subproject)... ==="
+        make -C "$RAYLIB_MAKE_DIR" PLATFORM=PLATFORM_DESKTOP CC="$CC"
+    fi
+
+    INCLUDE_DIRS="$INCLUDE_DIRS -I$RAYLIB_SUBPROJECT_DIR/src"
+    LDLIBS="$RAYLIB_STATIC_LIB -lGL -lX11 -lXrandr -lXinerama -lXi -lXcursor -lpthread -ldl -lrt -lm"
+else
+    if command -v "$PKG_CONFIG_BIN" >/dev/null 2>&1; then
+        if $PKG_CONFIG_BIN --exists raylib; then
+            RAYLIB_CFLAGS="$($PKG_CONFIG_BIN --cflags raylib)"
+            RAYLIB_LIBS="$($PKG_CONFIG_BIN --libs raylib)"
+            CFLAGS="$CFLAGS $RAYLIB_CFLAGS"
+            LDLIBS="$LDLIBS $RAYLIB_LIBS"
+        else
+            LDLIBS="$LDLIBS -lraylib"
+        fi
+    else
+        LDLIBS="$LDLIBS -lraylib"
+    fi
+fi
 
 SRC_FILES=("./src/unity_build.c")
 INCLUDE_DIRS="-I./include -I./vendor"
