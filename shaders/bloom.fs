@@ -15,7 +15,8 @@ const float KERNEL_SCALE = 24.0;
 
 vec3 sampleBright(vec2 uv)
 {
-    vec3 color = texture(texture0, uv).rgb;
+    vec2 clamped_uv = clamp(uv, vec2(0.0), vec2(1.0));
+    vec3 color = texture(texture0, clamped_uv).rgb;
     float luma = dot(color, vec3(0.2126, 0.7152, 0.0722));
     float knee = THRESHOLD * SOFT_KNEE + 1e-5;
     float soft = smoothstep(THRESHOLD - knee, THRESHOLD + knee, luma);
