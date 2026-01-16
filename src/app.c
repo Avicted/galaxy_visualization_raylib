@@ -85,6 +85,11 @@ app_update(app_state_t *app_state, f64 dt)
     if (IsKeyPressed(KEY_R))
     {
         app_state->is_paused = !app_state->is_paused;
+        if (app_state->data_to_draw != DRAW_DATA_REDSHIFT)
+        {
+            app_state->camera_zoom = CAMERA_INITIAL_ZOOM;
+        }
+        app_state->main_camera.fovy = CAMERA_FOV;
         printf("[DEBUG] Paused: %s\n", app_state->is_paused ? "yes" : "no");
     }
 
@@ -98,8 +103,17 @@ app_update(app_state_t *app_state, f64 dt)
     f64 scroll = GetMouseWheelMove();
     if (scroll != 0.0f)
     {
-        const f64 zoom_change = -CAMERA_ZOOM_SPEED;
-        app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * zoom_change * dt, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX);
+        if (app_state->is_paused)
+        {
+            const f64 fov_change = -CAMERA_ZOOM_SPEED * 4.0;
+            app_state->main_camera.fovy = Clamp(app_state->main_camera.fovy + scroll * fov_change * dt,
+                                                CAMERA_FOV_MIN, CAMERA_FOV_MAX);
+        }
+        else if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
+        {
+            const f64 zoom_change = -CAMERA_ZOOM_SPEED;
+            app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * zoom_change * dt, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX);
+        }
     }
 
     if (dt > 0.0)

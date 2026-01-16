@@ -11,4 +11,4 @@ i32 transforms_upload_to_gpu(app_state_t *app_state);
 i32 transforms_upload_instance_vbos(app_state_t *app_state);
 void transforms_cleanup_instance_vbos(app_state_t *app_state);
 
-#endif
+#endif // TRANSFORMS_H

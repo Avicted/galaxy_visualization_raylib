@@ -137,18 +137,72 @@ void camera_update(app_state_t *app_state, f64 dt)
             cam->position.x = horizontal_radius * cosf(orbit_time);
             cam->position.y = REDSHIFT_ORBIT_RADIUS * sin(pitch_rad) * app_state->camera_zoom;
             cam->position.z = horizontal_radius * sinf(orbit_time);
+
+            cam->target = Vector3Zero();
         }
         else
         {
-            // Normal mode: flat orbit at fixed height
-            orbit_time += dt * CAMERA_ORBIT_SPEED;
+            // Course data modes: revolution from Earth-side view to galaxy-side view
+            orbit_time += dt * CAMERA_ORBIT_SPEED * 0.55;
 
-            cam->position.x = CAMERA_ORBIT_RADIUS * cosf(orbit_time) * app_state->camera_zoom;
-            cam->position.y = CAMERA_ORBIT_HEIGHT;
-            cam->position.z = CAMERA_ORBIT_RADIUS * sinf(orbit_time) * app_state->camera_zoom;
+            app_state->camera_zoom = CAMERA_ZOOM_MIN;
+
+            Vector3 center = Vector3Zero();
+            f32 radius = CAMERA_ORBIT_RADIUS;
+
+            if (app_state->data_to_draw == DRAW_DATA_A)
+            {
+                center = app_state->course_center_a;
+                radius = app_state->course_radius_a;
+            }
+            else if (app_state->data_to_draw == DRAW_DATA_B)
+            {
+                center = app_state->course_center_b;
+                radius = app_state->course_radius_b;
+            }
+            else if (app_state->data_to_draw == DRAW_DATA_ALL)
+            {
+                center = app_state->course_center_all;
+                radius = app_state->course_radius_all;
+            }
+
+            if (radius <= 0.0f)
+            {
+                radius = CAMERA_ORBIT_RADIUS;
+            }
+
+            Vector3 orbit_center = center;
+            f32 center_len = Vector3Length(center);
+            if (center_len > 0.001f)
+            {
+                Vector3 center_dir = Vector3Scale(center, 1.0f / center_len);
+                orbit_center = Vector3Add(center, Vector3Scale(center_dir, radius * 0.6f));
+            }
+
+            Vector3 center_dir = (Vector3){1.0f, 0.0f, 0.0f};
+            center_len = Vector3Length(center);
+            if (center_len > 0.001f)
+            {
+                center_dir = Vector3Scale(center, 1.0f / center_len);
+            }
+
+            f32 earth_view_dist = fmaxf(12.0f, radius * 0.65f) * (f32)app_state->camera_zoom;
+            f32 earth_pitch = 8.0f * sinf(orbit_time * 0.35f);
+            Vector3 pos_earth = Vector3Scale(center_dir, -earth_view_dist);
+            pos_earth.y += earth_pitch;
+
+            f32 galaxy_orbit_radius = radius * 1.55f * (f32)app_state->camera_zoom;
+            f32 galaxy_pitch = 30.0f + 30.0f * sinf(orbit_time * 0.5f);
+            f32 galaxy_pitch_rad = galaxy_pitch * DEG2RAD;
+            Vector3 pos_galaxy = {
+                center.x + galaxy_orbit_radius * cosf(orbit_time) * cosf(galaxy_pitch_rad),
+                center.y + galaxy_orbit_radius * sinf(galaxy_pitch_rad),
+                center.z + galaxy_orbit_radius * sinf(orbit_time) * cosf(galaxy_pitch_rad)};
+
+            float blend = 0.5f - 0.5f * cosf(orbit_time * 0.35f);
+            cam->position = Vector3Lerp(pos_earth, pos_galaxy, blend);
+            cam->target = Vector3Lerp(center, Vector3Zero(), blend);
         }
-
-        cam->target = Vector3Zero();
     }
 
     prev_is_paused = app_state->is_paused;

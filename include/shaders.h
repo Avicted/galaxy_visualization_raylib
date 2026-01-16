@@ -5,4 +5,4 @@
 
 i32 shaders_init(app_state_t *app_state);
 
-#endif
+#endif // SHADERS_H

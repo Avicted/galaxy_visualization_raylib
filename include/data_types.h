@@ -87,4 +87,4 @@ typedef struct
     ul redshift_galaxy_count;
 } app_state_t;
 
-#endif
+#endif // DATA_TYPES_H

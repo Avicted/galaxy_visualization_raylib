@@ -9,4 +9,4 @@ i32 app_init(app_state_t *app_state);
 void app_run(app_state_t *app_state);
 void app_cleanup(app_state_t *app_state);
 
-#endif
+#endif // APP_H

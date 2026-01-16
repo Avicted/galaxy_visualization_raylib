@@ -3,6 +3,48 @@
 #include "macros.h"
 #include "rlgl.h"
 
+static Vector3
+transforms_course_position(f64 right_ascension, f64 declination)
+{
+    const f64 right_ascension_rad = (right_ascension / ARCMIN_TO_DEGREES) * DEG2RAD;
+    const f64 declination_rad = (declination / ARCMIN_TO_DEGREES) * DEG2RAD;
+    const f64 radius = COURSE_DATA_RADIUS;
+    const f64 cos_dec = cos(declination_rad);
+
+    Vector3 pos;
+    pos.x = (f32)(radius * cos(right_ascension_rad) * cos_dec);
+    pos.y = (f32)(radius * sin(declination_rad));
+    pos.z = (f32)(radius * sin(right_ascension_rad) * cos_dec);
+    return pos;
+}
+
+static void
+transforms_course_center_and_radius(f64 ra_min, f64 ra_max, f64 dec_min, f64 dec_max,
+                                    Vector3 *out_center, f32 *out_radius)
+{
+    const f64 ra_mid = 0.5 * (ra_min + ra_max);
+    const f64 dec_mid = 0.5 * (dec_min + dec_max);
+
+    Vector3 center = transforms_course_position(ra_mid, dec_mid);
+
+    Vector3 corner_a = transforms_course_position(ra_min, dec_min);
+    Vector3 corner_b = transforms_course_position(ra_max, dec_min);
+    Vector3 corner_c = transforms_course_position(ra_min, dec_max);
+    Vector3 corner_d = transforms_course_position(ra_max, dec_max);
+
+    f32 max_dist_sq = 0.0f;
+    Vector3 corners[4] = {corner_a, corner_b, corner_c, corner_d};
+    for (i32 i = 0; i < 4; ++i)
+    {
+        Vector3 d = Vector3Subtract(corners[i], center);
+        f32 dist_sq = d.x * d.x + d.y * d.y + d.z * d.z;
+        max_dist_sq = fmaxf(max_dist_sq, dist_sq);
+    }
+
+    *out_center = center;
+    *out_radius = sqrtf(max_dist_sq);
+}
+
 f64 transforms_distance_from_velocity(f64 velocity_km_s)
 {
     if (velocity_km_s <= 0.0)
@@ -54,8 +96,27 @@ Color transforms_color_from_velocity(f64 velocity_km_s)
 
 i32 transforms_init_course_data(app_state_t *app_state)
 {
+    f64 min_ra_a = 1e18;
+    f64 max_ra_a = -1e18;
+    f64 min_dec_a = 1e18;
+    f64 max_dec_a = -1e18;
+    f64 min_ra_b = 1e18;
+    f64 max_ra_b = -1e18;
+    f64 min_dec_b = 1e18;
+    f64 max_dec_b = -1e18;
+
     for (ul i = 0; i < app_state->data_point_count; ++i)
     {
+        min_ra_a = fmin(min_ra_a, app_state->data_points_a[i].right_ascension);
+        max_ra_a = fmax(max_ra_a, app_state->data_points_a[i].right_ascension);
+        min_dec_a = fmin(min_dec_a, app_state->data_points_a[i].declination);
+        max_dec_a = fmax(max_dec_a, app_state->data_points_a[i].declination);
+
+        min_ra_b = fmin(min_ra_b, app_state->data_points_b[i].right_ascension);
+        max_ra_b = fmax(max_ra_b, app_state->data_points_b[i].right_ascension);
+        min_dec_b = fmin(min_dec_b, app_state->data_points_b[i].declination);
+        max_dec_b = fmax(max_dec_b, app_state->data_points_b[i].declination);
+
         // Dataset A transforms
         {
             const f64 right_ascension_rad = (app_state->data_points_a[i].right_ascension / ARCMIN_TO_DEGREES) * DEG2RAD;
@@ -93,6 +154,21 @@ i32 transforms_init_course_data(app_state_t *app_state)
 
             app_state->matrix_transforms_b[i] = transform;
         }
+    }
+
+    if (app_state->data_point_count > 0)
+    {
+        transforms_course_center_and_radius(min_ra_a, max_ra_a, min_dec_a, max_dec_a,
+                                            &app_state->course_center_a, &app_state->course_radius_a);
+        transforms_course_center_and_radius(min_ra_b, max_ra_b, min_dec_b, max_dec_b,
+                                            &app_state->course_center_b, &app_state->course_radius_b);
+
+        f64 min_ra_all = fmin(min_ra_a, min_ra_b);
+        f64 max_ra_all = fmax(max_ra_a, max_ra_b);
+        f64 min_dec_all = fmin(min_dec_a, min_dec_b);
+        f64 max_dec_all = fmax(max_dec_a, max_dec_b);
+        transforms_course_center_and_radius(min_ra_all, max_ra_all, min_dec_all, max_dec_all,
+                                            &app_state->course_center_all, &app_state->course_radius_all);
     }
 
     return 0;
