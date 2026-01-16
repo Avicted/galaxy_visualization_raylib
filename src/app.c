@@ -17,7 +17,8 @@ internal i32
 app_init_platform(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    // SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     const char *window_title = TextFormat("Galaxy Visualization v%s", APP_VERSION);
     InitWindow(app_state->window_width, app_state->window_height, window_title);
 
@@ -268,6 +269,18 @@ void app_cleanup(app_state_t *app_state)
     if (app_state->material_instance.shader.id)
     {
         UnloadShader(app_state->material_instance.shader);
+    }
+    if (app_state->bloom_shader.id)
+    {
+        UnloadShader(app_state->bloom_shader);
+    }
+    if (app_state->scene_target.id)
+    {
+        UnloadRenderTexture(app_state->scene_target);
+    }
+    if (app_state->glow_target.id)
+    {
+        UnloadRenderTexture(app_state->glow_target);
     }
 
     if (app_state->main_font.texture.id)

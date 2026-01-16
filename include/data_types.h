@@ -48,12 +48,12 @@
 #define SPHERE_MESH_RADIUS 0.25f
 #define SPHERE_MESH_RINGS 4
 #define SPHERE_MESH_SLICES 4
-#define SPHERE_LOWPOLY_RINGS 3
-#define SPHERE_LOWPOLY_SLICES 3
+#define SPHERE_LOWPOLY_RINGS 6
+#define SPHERE_LOWPOLY_SLICES 6
 #define CUBE_MESH_SIZE 1.0f
 #define EARTH_SCALE 1.0f
 #define EARTH_MODEL_SCALE 0.01f
-#define COLOR_BRIGHTNESS_BOOST 80
+#define COLOR_BRIGHTNESS_BOOST 1
 
 // Course data visualization
 #define COURSE_DATA_RADIUS 50.0f
@@ -64,11 +64,11 @@
 #define MIN_VELOCITY_THRESHOLD 500.0
 #define VELOCITY_NORMALIZATION_BASE 500.0
 #define VELOCITY_NORMALIZATION_RANGE 90000.0
-#define RENDER_DISTANCE_MIN 200.0
-#define RENDER_DISTANCE_RANGE 600.0
+#define RENDER_DISTANCE_MIN 400.0
+#define RENDER_DISTANCE_RANGE 4000.0
 #define RENDER_DISTANCE_MAX (RENDER_DISTANCE_MIN + RENDER_DISTANCE_RANGE)
-#define DISTANCE_SIZE_SCALE_MIN 2.0
-#define DISTANCE_SIZE_SCALE_MAX 8.0
+#define DISTANCE_SIZE_SCALE_MIN 4.0
+#define DISTANCE_SIZE_SCALE_MAX 64.0
 #define COLOR_VELOCITY_BASE 1000.0
 #define COLOR_VELOCITY_RANGE 85000.0
 #define COLOR_THRESHOLD_LOW 0.33
@@ -174,6 +174,9 @@ typedef struct
     Vector3 camera_direction;
 
     Shader custom_shader;
+    Shader bloom_shader;
+    RenderTexture2D scene_target;
+    RenderTexture2D glow_target;
     Mesh sphere_mesh_lowpoly;
     Model earth_model;
 

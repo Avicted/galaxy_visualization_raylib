@@ -16,6 +16,13 @@ i32 shaders_init(app_state_t *app_state)
     app_state->custom_shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(app_state->custom_shader, "viewPos");
     app_state->custom_shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(app_state->custom_shader, "instanceTransform");
 
+    app_state->bloom_shader = asset_io_load_shader(ASSET_SHADER_BLOOM_VS, ASSET_SHADER_BLOOM_FS);
+    if (app_state->bloom_shader.id == 0 || app_state->bloom_shader.locs == NULL)
+    {
+        fprintf(stderr, "[ERROR] Failed to load bloom shader\n");
+        return 1;
+    }
+
     {
         i32 ambient_location = GetShaderLocation(app_state->custom_shader, "ambient");
         f32 ambient_value[4] = {1.0f, 1.0f, 1.0f, 1.0f};

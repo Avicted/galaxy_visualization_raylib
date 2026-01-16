@@ -25,6 +25,8 @@
 // Include all generated embedded asset headers
 #include "embedded/shader_lighting_instancing_vs.h"
 #include "embedded/shader_lighting_fs.h"
+#include "embedded/shader_bloom_vs.h"
+#include "embedded/shader_bloom_fs.h"
 #include "embedded/font_perfect_dos.h"
 #include "embedded/font_abuget.h"
 #include "embedded/icon_app.h"
