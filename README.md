@@ -48,6 +48,7 @@ sudo apt-get install -y raylib build-essential meson git clang python3
 You can choose between two build modes:
 - **Normal build**: External asset files (45 KB binary + ~8 MB assets)
 - **Embedded build**: Single portable binary with all assets compressed (~6 MB)
+- **Static raylib (optional)**: Links raylib statically while keeping system libraries dynamic
 
 ### Using build.sh
 
@@ -55,11 +56,17 @@ You can choose between two build modes:
 # Make executable
 chmod +x ./build.sh
 
+# (Optional) download raylib subproject for static linking
+meson subprojects download raylib
+
 # Normal build (with external assets)
 ./build.sh
 
 # Embedded build (single portable binary)
 ./build.sh --embed
+
+# Embedded + static raylib
+./build.sh --embed --static
 
 # Build and run
 ./build.sh --run
@@ -85,6 +92,16 @@ meson setup build_embedded -Dembed_assets=true
 meson compile -C build_embedded
 ./build_embedded/galaxy_visualization_raylib  # Can run from anywhere!
 
+# Embedded + static raylib (system libs still dynamic)
+meson subprojects download raylib
+meson setup build_embedded_static -Dembed_assets=true -Draylib_static=true
+meson compile -C build_embedded_static
+
+If your system package does not provide a static raylib, use the Meson wrap subproject:
+
+- Run: `meson subprojects download raylib`
+- Meson will use the subproject when `-Draylib_static=true` is used
+
 # Clean
 meson compile -C build --clean
 ```
@@ -95,6 +112,7 @@ meson compile -C build --clean
 |--------|-------------|-------------|
 | Normal | External assets required | ~45 KB |
 | Embedded (`--embed` or `-Dembed_assets=true`) | All assets compressed into binary | ~6 MB |
+| Static raylib (`--static` or `-Draylib_static=true`) | raylib linked statically, system libs dynamic | Varies |
 
 The embedded binary includes:
 - Fonts, shaders, and 3D models

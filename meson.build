@@ -18,7 +18,14 @@ project('galaxy_visualization_raylib', 'c',
   ]
 )
 
-raylib_dep = dependency('raylib', required: true)
+raylib_static = get_option('raylib_static')
+
+if raylib_static
+  raylib_sub = subproject('raylib')
+  raylib_dep = raylib_sub.get_variable('raylib_dep')
+else
+  raylib_dep = dependency('raylib', required: true, static: false)
+endif
 
 embed_assets = get_option('embed_assets')
 extra_c_args = []
