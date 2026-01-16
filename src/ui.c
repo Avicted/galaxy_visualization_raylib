@@ -192,8 +192,8 @@ ui_draw_help_panel(app_state_t *app_state)
                             app_state->data_to_draw == DRAW_DATA_B ||
                             app_state->data_to_draw == DRAW_DATA_ALL);
         const char *help_lines = zoom_locked
-                                     ? "1-4  Dataset\nR    Camera mode\nH    Toggle help\nF11  Fullscreen"
-                                     : "1-4  Dataset\nR    Camera mode\nH    Toggle help\nF11  Fullscreen\nScroll  Zoom";
+                                     ? "1-4  Dataset\nR    Camera mode\nB    Toggle bloom\nH    Toggle help\nF11  Fullscreen"
+                                     : "1-4  Dataset\nR    Camera mode\nB    Toggle bloom\nH    Toggle help\nF11  Fullscreen\nScroll  Zoom";
         DrawTextEx(app_state->main_font, help_lines, (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
 
         if (app_state->is_paused)

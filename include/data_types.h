@@ -44,6 +44,7 @@ typedef struct
     bool is_paused;
     bool cursor_enabled;
     bool show_help;
+    bool bloom_enabled;
     f64 fps_smoothed;
     f64 fps_display;
     f64 fps_update_timer;

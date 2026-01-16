@@ -381,7 +381,7 @@ void renderer_draw_frame(app_state_t *app_state)
         return;
     }
 
-    if (app_state->data_to_draw < DRAW_DATA_COUNT)
+    if (app_state->bloom_enabled && app_state->data_to_draw < DRAW_DATA_COUNT)
     {
         renderer_ensure_render_targets(app_state);
 

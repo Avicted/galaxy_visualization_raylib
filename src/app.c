@@ -115,6 +115,11 @@ app_update(app_state_t *app_state, f64 dt)
         app_state->show_help = !app_state->show_help;
     }
 
+    if (IsKeyPressed(KEY_B))
+    {
+        app_state->bloom_enabled = !app_state->bloom_enabled;
+    }
+
     camera_update(app_state, dt);
 
     f64 scroll = GetMouseWheelMove();
@@ -197,7 +202,8 @@ i32 app_init(app_state_t *app_state)
     app_state->debug = prev_debug;
     app_state->cursor_enabled = true;
     app_state->show_start_screen = true;
-    app_state->show_help = false; // Hidden by default for better performance
+    app_state->show_help = true;
+    app_state->bloom_enabled = true;
 
     app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     app_state->main_camera.fovy = CAMERA_FOV;
