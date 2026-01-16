@@ -10,8 +10,8 @@
 
 //  Camera constants
 #define CAMERA_FOV 85.0f
-#define CAMERA_MOVE_SPEED 10.0f
-#define CAMERA_VERTICAL_SPEED 5.0f
+#define CAMERA_MOVE_SPEED 64.0f
+#define CAMERA_VERTICAL_SPEED 64.0f
 #define CAMERA_MOUSE_SENSITIVITY 0.1f
 #define CAMERA_PITCH_LIMIT 89.0f
 #define CAMERA_ORBIT_RADIUS 25.0f
@@ -20,9 +20,9 @@
 #define CAMERA_INITIAL_ZOOM (0.8f * PI)
 #define CAMERA_INITIAL_YAW 45.80f
 #define CAMERA_INITIAL_PITCH 42.12f
-#define CAMERA_ZOOM_SPEED 32.0f
+#define CAMERA_ZOOM_SPEED 64.0f
 #define CAMERA_ZOOM_MIN 0.5f
-#define CAMERA_ZOOM_MAX 5.0f
+#define CAMERA_ZOOM_MAX 16.0f
 #define CAMERA_SLOW_FACTOR 0.1f
 
 // Free look starting position
@@ -50,14 +50,13 @@
 #define SPHERE_MESH_SLICES 4
 #define SPHERE_LOWPOLY_RINGS 6
 #define SPHERE_LOWPOLY_SLICES 6
-#define CUBE_MESH_SIZE 1.0f
 #define EARTH_SCALE 1.0f
 #define EARTH_MODEL_SCALE 0.01f
 #define COLOR_BRIGHTNESS_BOOST 1
 
 // Course data visualization
-#define COURSE_DATA_RADIUS 50.0f
-#define COURSE_DATA_SCALE 0.1f
+#define COURSE_DATA_RADIUS 128.0f
+#define COURSE_DATA_SCALE 0.5f
 #define ARCMIN_TO_DEGREES 60.0
 
 // Redshift/Hubble constants
