@@ -186,20 +186,35 @@ ui_draw_help_panel(app_state_t *app_state)
         DrawTextEx(app_state->main_font, "Controls", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 2, WHITE);
         line_y += line_spacing + 4;
 
-        // Consolidated static help text (reduces DrawTextEx calls from 5 to 1)
         bool zoom_locked = !app_state->is_paused &&
                            (app_state->data_to_draw == DRAW_DATA_A ||
                             app_state->data_to_draw == DRAW_DATA_B ||
                             app_state->data_to_draw == DRAW_DATA_ALL);
-        const char *help_lines = zoom_locked
-                                     ? "1-4  Dataset\nR    Camera mode\nB    Toggle bloom\nH    Toggle help\nF11  Fullscreen"
-                                     : "1-4  Dataset\nR    Camera mode\nB    Toggle bloom\nH    Toggle help\nF11  Fullscreen\nScroll  Zoom";
-        DrawTextEx(app_state->main_font, help_lines, (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
+
+        const char *lines[8];
+        i32 line_count = 0;
+        lines[line_count++] = "1-4  Dataset";
+        lines[line_count++] = "R    Camera mode";
+        lines[line_count++] = "B    Toggle bloom";
+        lines[line_count++] = "H    Toggle help";
+        lines[line_count++] = "F11  Fullscreen";
+        if (!zoom_locked)
+        {
+            lines[line_count++] = "Scroll  Zoom";
+        }
+
+        for (i32 i = 0; i < line_count; ++i)
+        {
+            DrawTextEx(app_state->main_font, lines[i],
+                       (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, TEXT_DIM);
+            line_y += line_spacing;
+        }
 
         if (app_state->is_paused)
         {
-            line_y += line_spacing * 5 + 6;
-            DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space", (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, ACCENT_PURPLE);
+            line_y += 4;
+            DrawTextEx(app_state->main_font, "WASD+Mouse Shift/Space",
+                       (Vector2){(f32)(help_x + UI_PANEL_PADDING), (f32)line_y}, FONT_SIZE_MEDIUM, 1, ACCENT_PURPLE);
         }
     }
     else

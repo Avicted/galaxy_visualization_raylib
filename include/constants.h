@@ -1,8 +1,9 @@
 #ifndef CONSTANTS_H
 #define CONSTANTS_H
 
-#define INITIAL_WINDOW_WIDTH 1920
-#define INITIAL_WINDOW_HEIGHT 1080
+// @TODO(Victor): Set the render size based on display resolution? after window init.
+#define INITIAL_WINDOW_WIDTH 2560
+#define INITIAL_WINDOW_HEIGHT 1440
 
 #define MAX_DATA_POINTS 100000UL
 #define MAX_REDSHIFT_GALAXIES 100000UL
