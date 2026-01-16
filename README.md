@@ -27,19 +27,20 @@ This project can be built using clang/gcc through build.sh (raylib is the only d
 - **Meson**  (optional)
 - **Python3** (optional, for embedded build compression)
 - **gdb**    (optional)
+- **ImageMagick** (required for Windows icon embedding in mingw builds)
 
 ## Installation Commands
 
 ### Arch Linux
 
 ```bash
-sudo pacman -S raylib base-devel meson git clang python
+sudo pacman -S raylib base-devel meson git clang python imagemagick
 ```
 
 ### Ubuntu
 
 ```bash
-sudo apt-get install -y raylib build-essential meson git clang python3
+sudo apt-get install -y raylib build-essential meson git clang python3 imagemagick
 ```
 
 ## Building
@@ -118,6 +119,9 @@ meson subprojects download raylib
 meson setup build_mingw_embedded_static --cross-file ./cross/mingw64.ini -Dembed_assets=true -Draylib_static=true
 meson compile -C build_mingw_embedded_static
 ```
+
+Notes:
+- Windows builds embed the app icon into the .exe using ImageMagick during the build.
 
 Or using build.sh:
 
