@@ -1,5 +1,5 @@
 project('galaxy_visualization_raylib', 'c',
-  version : '0.4.0',
+  version : '0.5.0',
   default_options : [
     'c_std=c99',
     

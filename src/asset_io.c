@@ -45,6 +45,15 @@ global_variable const asset_info_t g_asset_info[ASSET_ID_COUNT] = {
         .original_size = font_perfect_dos_original_size,
 #endif
     },
+    [ASSET_FONT_ABUGET] = {
+        .disk_path = "./assets/fonts/Abuget.ttf",
+        .is_text = false,
+#ifdef EMBED_ASSETS
+        .compressed_data = font_abuget_data,
+        .compressed_size = font_abuget_compressed_size,
+        .original_size = font_abuget_original_size,
+#endif
+    },
     [ASSET_ICON_APP] = {
         .disk_path = "./assets/images/app_icon.png",
         .is_text = false,

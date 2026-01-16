@@ -42,6 +42,21 @@ app_update(app_state_t *app_state, f64 dt)
 {
     camera_handle_resize(app_state);
 
+    if (app_state->show_start_screen)
+    {
+        if (IsKeyPressed(KEY_ESCAPE))
+        {
+            CloseWindow();
+        }
+
+        if (IsKeyPressed(KEY_SPACE))
+        {
+            app_state->show_start_screen = false;
+        }
+
+        return;
+    }
+
     if (IsKeyPressed(KEY_ESCAPE))
     {
         CloseWindow();
@@ -150,6 +165,7 @@ i32 app_init(app_state_t *app_state)
     app_state->window_height = INITIAL_WINDOW_HEIGHT;
     app_state->debug = prev_debug;
     app_state->cursor_enabled = true;
+    app_state->show_start_screen = true;
     app_state->show_help = false; // Hidden by default for better performance
 
     app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
@@ -187,6 +203,15 @@ i32 app_init(app_state_t *app_state)
         if (app_state->main_font.texture.id == 0)
         {
             fprintf(stderr, "[ERROR] Failed to load font data\n");
+        }
+    }
+
+    {
+        app_state->start_screen_font = asset_io_load_font(ASSET_FONT_ABUGET, FONT_LOAD_SIZE * 2, NULL, FONT_GLYPH_COUNT * 3);
+        if (app_state->start_screen_font.texture.id == 0)
+        {
+            fprintf(stderr, "[WARN]  Failed to load start screen font, using default\n");
+            app_state->start_screen_font = app_state->main_font;
         }
     }
 
@@ -250,6 +275,11 @@ void app_cleanup(app_state_t *app_state)
         UnloadFont(app_state->main_font);
     }
 
+    if (app_state->start_screen_font.texture.id && app_state->start_screen_font.texture.id != app_state->main_font.texture.id)
+    {
+        UnloadFont(app_state->start_screen_font);
+    }
+
     if (app_state->data_points_a)
     {
         free(app_state->data_points_a);
@@ -281,6 +311,21 @@ void app_cleanup(app_state_t *app_state)
         app_state->cpu_memory_allocated -= app_state->redshift_galaxy_count * sizeof(Matrix);
     }
     if (app_state->redshift_galaxy_colors)
+
+        if (app_state->show_start_screen)
+        {
+            if (IsKeyPressed(KEY_ESCAPE))
+            {
+                CloseWindow();
+            }
+
+            if (IsKeyPressed(KEY_SPACE))
+            {
+                app_state->show_start_screen = false;
+            }
+
+            return;
+        }
     {
         free(app_state->redshift_galaxy_colors);
         app_state->cpu_memory_allocated -= app_state->redshift_galaxy_count * sizeof(Color);
