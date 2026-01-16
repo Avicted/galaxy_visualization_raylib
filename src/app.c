@@ -9,12 +9,17 @@
 #include "macros.h"
 #include "asset_io.h"
 
+#ifndef APP_VERSION
+#define APP_VERSION "0.0.0"
+#endif
+
 internal i32
 app_init_platform(app_state_t *app_state)
 {
     SetTraceLogLevel(LOG_WARNING);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
-    InitWindow(app_state->window_width, app_state->window_height, "galaxy_visuazation_raylib");
+    const char *window_title = TextFormat("Galaxy Visualization v%s", APP_VERSION);
+    InitWindow(app_state->window_width, app_state->window_height, window_title);
 
     {
         Image icon = asset_io_load_image(ASSET_ICON_APP, ".png");
@@ -163,7 +168,7 @@ i32 app_init(app_state_t *app_state)
         return 1;
     }
 
-    printf("[INFO]  Galaxy Visualization initialized\n");
+    printf("[INFO]  Galaxy Visualization v%s initialized\n", APP_VERSION);
 
     if (transforms_upload_to_gpu(app_state) != 0)
     {
