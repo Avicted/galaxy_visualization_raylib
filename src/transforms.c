@@ -7,34 +7,34 @@ f64 transforms_distance_from_velocity(f64 velocity_km_s)
 {
     if (velocity_km_s <= 0.0)
     {
-        return RENDER_DISTANCE_MIN;
+        return REDSHIFT_RENDER_DISTANCE_MIN;
     }
 
-    f64 normalized = (velocity_km_s - VELOCITY_NORMALIZATION_BASE) / VELOCITY_NORMALIZATION_RANGE;
+    f64 normalized = (velocity_km_s - REDSHIFT_VELOCITY_NORMALIZATION_BASE) / REDSHIFT_VELOCITY_NORMALIZATION_RANGE;
     normalized = fmax(0.0, fmin(normalized, 1.0));
 
-    f64 render_distance = RENDER_DISTANCE_MIN + sqrt(normalized) * RENDER_DISTANCE_RANGE;
+    f64 render_distance = REDSHIFT_RENDER_DISTANCE_MIN + sqrt(normalized) * REDSHIFT_RENDER_DISTANCE_RANGE;
     return render_distance;
 }
 
 Color transforms_color_from_velocity(f64 velocity_km_s)
 {
-    f64 t = (velocity_km_s - COLOR_VELOCITY_BASE) / COLOR_VELOCITY_RANGE;
+    f64 t = (velocity_km_s - REDSHIFT_COLOR_VELOCITY_BASE) / REDSHIFT_COLOR_VELOCITY_RANGE;
     t = fmax(0.0, fmin(t, 1.0));
 
     Color color;
 
-    if (t < COLOR_THRESHOLD_LOW)
+    if (t < REDSHIFT_COLOR_THRESHOLD_LOW)
     {
-        f64 s = t / COLOR_THRESHOLD_LOW;
+        f64 s = t / REDSHIFT_COLOR_THRESHOLD_LOW;
         color.r = (u8)(s * 255.0);
         color.g = (u8)(200.0 + s * 55.0);
         color.b = (u8)(255.0 - s * 175.0);
         color.a = 255;
     }
-    else if (t < COLOR_THRESHOLD_MID)
+    else if (t < REDSHIFT_COLOR_THRESHOLD_MID)
     {
-        f64 s = (t - COLOR_THRESHOLD_LOW) / COLOR_THRESHOLD_LOW;
+        f64 s = (t - REDSHIFT_COLOR_THRESHOLD_LOW) / REDSHIFT_COLOR_THRESHOLD_LOW;
         color.r = 255;
         color.g = (u8)(230 - s * 100);
         color.b = (u8)(55 - s * 35);
@@ -42,7 +42,7 @@ Color transforms_color_from_velocity(f64 velocity_km_s)
     }
     else
     {
-        f64 s = (t - COLOR_THRESHOLD_MID) / COLOR_THRESHOLD_HIGH;
+        f64 s = (t - REDSHIFT_COLOR_THRESHOLD_MID) / REDSHIFT_COLOR_THRESHOLD_HIGH;
         color.r = (u8)(255 - s * 55);
         color.g = (u8)(130 - s * 90);
         color.b = (u8)(20 - s * 10);
@@ -122,9 +122,9 @@ i32 transforms_init_redshift_data(app_state_t *app_state)
         }
 
         // Scale size based on distance so farther galaxies remain visible
-        f64 distance_t = (radius - RENDER_DISTANCE_MIN) / RENDER_DISTANCE_RANGE;
+        f64 distance_t = (radius - REDSHIFT_RENDER_DISTANCE_MIN) / REDSHIFT_RENDER_DISTANCE_RANGE;
         distance_t = fmax(0.0, fmin(distance_t, 1.0));
-        f64 distance_scale = DISTANCE_SIZE_SCALE_MIN + distance_t * (DISTANCE_SIZE_SCALE_MAX - DISTANCE_SIZE_SCALE_MIN);
+        f64 distance_scale = REDSHIFT_DISTANCE_SIZE_SCALE_MIN + distance_t * (REDSHIFT_DISTANCE_SIZE_SCALE_MAX - REDSHIFT_DISTANCE_SIZE_SCALE_MIN);
         f64 final_scale = magnitude_scale * distance_scale;
 
         app_state->matrix_transforms_redshift[i] = MatrixMultiply(

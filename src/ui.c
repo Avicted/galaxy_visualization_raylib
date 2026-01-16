@@ -116,17 +116,17 @@ ui_draw_mode_indicator(app_state_t *app_state)
             f64 t = (f64)seg / (f64)(num_segments - 1);
             Color seg_color;
 
-            if (t < COLOR_THRESHOLD_LOW)
+            if (t < REDSHIFT_COLOR_THRESHOLD_LOW)
             {
-                f64 s = t / COLOR_THRESHOLD_LOW;
+                f64 s = t / REDSHIFT_COLOR_THRESHOLD_LOW;
                 seg_color.r = (u8)(100 + s * 155);
                 seg_color.g = (u8)(255 - s * 25);
                 seg_color.b = (u8)(255 - s * 200);
                 seg_color.a = 255;
             }
-            else if (t < COLOR_THRESHOLD_MID)
+            else if (t < REDSHIFT_COLOR_THRESHOLD_MID)
             {
-                f64 s = (t - COLOR_THRESHOLD_LOW) / COLOR_THRESHOLD_LOW;
+                f64 s = (t - REDSHIFT_COLOR_THRESHOLD_LOW) / REDSHIFT_COLOR_THRESHOLD_LOW;
                 seg_color.r = 255;
                 seg_color.g = (u8)(230 - s * 100);
                 seg_color.b = (u8)(55 - s * 35);
@@ -134,7 +134,7 @@ ui_draw_mode_indicator(app_state_t *app_state)
             }
             else
             {
-                f64 s = (t - COLOR_THRESHOLD_MID) / COLOR_THRESHOLD_HIGH;
+                f64 s = (t - REDSHIFT_COLOR_THRESHOLD_MID) / REDSHIFT_COLOR_THRESHOLD_HIGH;
                 seg_color.r = (u8)(255 - s * 55);
                 seg_color.g = (u8)(130 - s * 90);
                 seg_color.b = (u8)(20 - s * 10);

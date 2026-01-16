@@ -2,6 +2,7 @@
 #include "includes.h"
 #include "macros.h"
 #include "asset_io.h"
+
 // Helper: Get next line from a memory buffer
 // Returns pointer to start of line, advances *pos past the newline
 // Returns NULL if no more lines
@@ -88,7 +89,6 @@ data_loader_read_arcmin_from_memory(const char *data, size_t data_size, arcmin_d
     return (usize)i;
 }
 
-// Memory-based Seyfert redshift file parser
 internal usize
 data_loader_read_redshift_from_memory(const char *data, size_t data_size, redshift_galaxy_t *galaxies, ul max_galaxies)
 {
@@ -207,7 +207,6 @@ data_loader_read_redshift_from_memory(const char *data, size_t data_size, redshi
     return galaxy_count;
 }
 
-// Memory-based SAGA DR3 file parser
 internal usize
 data_loader_read_saga_dr3_from_memory(const char *data, size_t data_size, redshift_galaxy_t *galaxies, ul max_galaxies)
 {
@@ -257,7 +256,7 @@ data_loader_read_saga_dr3_from_memory(const char *data, size_t data_size, redshi
         }
 
         f64 velocity = redshift * SPEED_OF_LIGHT_KMS;
-        if (velocity <= MIN_VELOCITY_THRESHOLD)
+        if (velocity <= REDSHIFT_MIN_VELOCITY_THRESHOLD)
         {
             continue;
         }
@@ -555,7 +554,7 @@ usize data_loader_read_saga_dr3_file(const char *file_name, redshift_galaxy_t *g
         f64 velocity = redshift * SPEED_OF_LIGHT_KMS;
 
         // Skip very nearby galaxies (velocity threshold similar to seyfert parser)
-        if (velocity <= MIN_VELOCITY_THRESHOLD)
+        if (velocity <= REDSHIFT_MIN_VELOCITY_THRESHOLD)
         {
             continue;
         }

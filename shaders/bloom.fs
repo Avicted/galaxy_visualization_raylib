@@ -29,13 +29,13 @@ void main()
     float weight_sum = 0.0;
 
     const int SAMPLES = 64;
-    const float GOLDEN_ANGLE = 2.39996323; // radians
+    const float GOLDEN_ANGLE_RAD = 2.39996323;
 
     for (int i = 0; i < SAMPLES; ++i)
     {
         float t = (float(i) + 0.5) / float(SAMPLES);
         float radius = t * KERNEL_SCALE;
-        float angle = float(i) * GOLDEN_ANGLE;
+        float angle = float(i) * GOLDEN_ANGLE_RAD;
         vec2 offset = vec2(cos(angle), sin(angle)) * radius * texel;
 
         float w = pow(1.0 - t, 2.0);
