@@ -1,5 +1,5 @@
-#ifndef CONTANTS_H
-#define CONTANTS_H
+#ifndef CONSTANTS_H
+#define CONSTANTS_H
 
 #define INITIAL_WINDOW_WIDTH 1920
 #define INITIAL_WINDOW_HEIGHT 1080
@@ -106,4 +106,4 @@
 #define UI_COLOR_BAR_HEIGHT 16
 #define UI_COLOR_BAR_SEGMENTS 40
 
-#endif // CONTANTS_H
+#endif // CONSTANTS_H

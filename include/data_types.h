@@ -57,6 +57,12 @@ typedef struct
     f64 camera_yaw;
     f64 camera_pitch;
     Vector3 camera_direction;
+    Vector3 course_center_a;
+    Vector3 course_center_b;
+    Vector3 course_center_all;
+    f32 course_radius_a;
+    f32 course_radius_b;
+    f32 course_radius_all;
 
     Shader custom_shader;
     Shader bloom_shader;
