@@ -89,6 +89,10 @@ app_update(app_state_t *app_state, f64 dt)
         {
             app_state->camera_zoom = CAMERA_INITIAL_ZOOM;
         }
+        else if (!app_state->is_paused)
+        {
+            app_state->camera_zoom = CAMERA_INITIAL_ZOOM;
+        }
         app_state->main_camera.fovy = CAMERA_FOV;
         printf("[DEBUG] Paused: %s\n", app_state->is_paused ? "yes" : "no");
     }
