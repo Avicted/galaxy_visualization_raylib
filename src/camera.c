@@ -171,16 +171,8 @@ void camera_update(app_state_t *app_state, f64 dt)
                 radius = CAMERA_ORBIT_RADIUS;
             }
 
-            Vector3 orbit_center = center;
             f32 center_len = Vector3Length(center);
-            if (center_len > 0.001f)
-            {
-                Vector3 center_dir = Vector3Scale(center, 1.0f / center_len);
-                orbit_center = Vector3Add(center, Vector3Scale(center_dir, radius * 0.6f));
-            }
-
             Vector3 center_dir = (Vector3){1.0f, 0.0f, 0.0f};
-            center_len = Vector3Length(center);
             if (center_len > 0.001f)
             {
                 center_dir = Vector3Scale(center, 1.0f / center_len);
