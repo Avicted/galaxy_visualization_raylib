@@ -11,6 +11,7 @@
 
 #ifdef EMBED_ASSETS
 
+#include "redefines.h"
 #include <stdlib.h>
 #include <string.h>
 
@@ -39,7 +40,7 @@
  * @param original_size Expected size of decompressed data
  * @return Pointer to decompressed data (caller must free), or NULL on error
  */
-static inline unsigned char *
+internal inline unsigned char *
 embedded_decompress_zlib(const unsigned char *compressed_data, size_t compressed_size, size_t original_size)
 {
     unsigned char *decompressed = (unsigned char *)malloc(original_size + 1);

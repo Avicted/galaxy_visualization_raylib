@@ -19,7 +19,7 @@ typedef struct
 #endif
 } asset_info_t;
 
-static const asset_info_t g_asset_info[ASSET_ID_COUNT] = {
+global_variable const asset_info_t g_asset_info[ASSET_ID_COUNT] = {
     [ASSET_SHADER_LIGHTING_INSTANCING_VS] = {
         .disk_path = "./shaders/lighting_instancing.vs",
         .is_text = true,
@@ -102,7 +102,7 @@ static const asset_info_t g_asset_info[ASSET_ID_COUNT] = {
 };
 
 #ifndef EMBED_ASSETS
-static i32
+internal i32
 asset_io_read_file(const char *path, bool add_null_terminator, asset_blob_t *out_blob)
 {
     if (out_blob == NULL || path == NULL)
@@ -278,10 +278,10 @@ Shader asset_io_load_shader(asset_id_t vs_id, asset_id_t fs_id)
 }
 
 #ifdef EMBED_ASSETS
-static unsigned char *g_model_blob_data = NULL;
-static size_t g_model_blob_size = 0;
+global_variable unsigned char *g_model_blob_data = NULL;
+global_variable size_t g_model_blob_size = 0;
 
-static unsigned char *
+internal unsigned char *
 asset_io_load_file_data(const char *fileName, int *dataSize)
 {
     if (dataSize == NULL)

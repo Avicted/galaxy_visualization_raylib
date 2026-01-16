@@ -5,7 +5,7 @@
 // Helper: Get next line from a memory buffer
 // Returns pointer to start of line, advances *pos past the newline
 // Returns NULL if no more lines
-static char *
+internal char *
 mem_getline(const char *data, size_t data_size, size_t *pos, char *line_buf, size_t line_buf_size)
 {
     if (*pos >= data_size)
@@ -37,7 +37,7 @@ mem_getline(const char *data, size_t data_size, size_t *pos, char *line_buf, siz
 }
 
 // Memory-based arcmin file parser
-static usize
+internal usize
 data_loader_read_arcmin_from_memory(const char *data, size_t data_size, arcmin_data_t *data_points, ul max_points)
 {
     char line[1024];
@@ -89,7 +89,7 @@ data_loader_read_arcmin_from_memory(const char *data, size_t data_size, arcmin_d
 }
 
 // Memory-based Seyfert redshift file parser
-static usize
+internal usize
 data_loader_read_redshift_from_memory(const char *data, size_t data_size, redshift_galaxy_t *galaxies, ul max_galaxies)
 {
     char line[256];
@@ -208,7 +208,7 @@ data_loader_read_redshift_from_memory(const char *data, size_t data_size, redshi
 }
 
 // Memory-based SAGA DR3 file parser
-static usize
+internal usize
 data_loader_read_saga_dr3_from_memory(const char *data, size_t data_size, redshift_galaxy_t *galaxies, ul max_galaxies)
 {
     char line[512];
