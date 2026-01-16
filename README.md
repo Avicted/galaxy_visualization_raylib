@@ -104,7 +104,7 @@ If your system package does not provide a static raylib, use the Meson wrap subp
 
 - Run: `meson subprojects download raylib`
 - Meson will use the subproject when `-Draylib_static=true` is used
-```
+
 
 ### Cross-compiling for Windows (mingw64)
 
