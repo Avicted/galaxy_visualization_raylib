@@ -26,6 +26,7 @@
 #include "embedded/shader_lighting_instancing_vs.h"
 #include "embedded/shader_lighting_fs.h"
 #include "embedded/font_perfect_dos.h"
+#include "embedded/font_abuget.h"
 #include "embedded/icon_app.h"
 #include "embedded/model_earth.h"
 #include "embedded/data_arcmin_a.h"

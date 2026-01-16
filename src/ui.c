@@ -1,5 +1,10 @@
 #include "ui.h"
 #include "utils.h"
+#include <math.h>
+
+#ifndef APP_VERSION
+#define APP_VERSION "0.0.0"
+#endif
 
 global_variable const Color PANEL_BG = {20, 20, 30, 200};
 global_variable const Color PANEL_BORDER = {60, 60, 80, 255};
@@ -8,6 +13,40 @@ global_variable const Color ACCENT_BLUE = {64, 64, 255, 255};
 global_variable const Color ACCENT_RED = {255, 64, 64, 255};
 global_variable const Color ACCENT_GREEN = {100, 255, 64, 255};
 global_variable const Color ACCENT_PURPLE = {255, 64, 255, 255};
+
+void ui_draw_start_screen(app_state_t *app_state)
+{
+    const char *title_text = TextFormat("Galaxy Visualization v%s", APP_VERSION);
+    const char *prompt_text = "Press SPACE to start";
+    const char *credits_text = "Credits: Victor Anderssén";
+
+    Font start_font = app_state->start_screen_font.texture.id ? app_state->start_screen_font : app_state->main_font;
+    Font main_font = app_state->main_font;
+
+    const f32 title_size = FONT_SIZE_LARGE * 8.0f;
+    const f32 prompt_size = FONT_SIZE_MEDIUM * 2.0f;
+    const f32 credits_size = FONT_SIZE_MEDIUM * 5.0f;
+
+    Vector2 title_measure = MeasureTextEx(start_font, title_text, title_size, 2);
+    Vector2 prompt_measure = MeasureTextEx(main_font, prompt_text, prompt_size, 1);
+    Vector2 credits_measure = MeasureTextEx(start_font, credits_text, credits_size, 1);
+
+    f32 title_x = (app_state->window_width - title_measure.x) * 0.5f;
+    f32 title_y = (app_state->window_height - title_measure.y) * 0.5f - 40.0f;
+    f32 prompt_x = (app_state->window_width - prompt_measure.x) * 0.5f;
+    f32 prompt_y = title_y + title_measure.y + 80.0f;
+    f32 credits_x = (app_state->window_width - credits_measure.x) * 0.5f;
+    f32 credits_y = app_state->window_height - credits_measure.y - UI_PANEL_MARGIN * 2;
+
+    DrawTextEx(start_font, title_text, (Vector2){title_x, title_y}, title_size, 2, WHITE);
+
+    f32 pulse = (sinf((f32)GetTime() * 2.0f) + 1.0f) * 0.5f;
+    Color prompt_color = ColorLerp(TEXT_DIM, WHITE, pulse);
+    prompt_color.a = (u8)(80 + (pulse * 175.0f));
+    DrawTextEx(main_font, prompt_text, (Vector2){prompt_x, prompt_y}, prompt_size, 1, prompt_color);
+
+    DrawTextEx(start_font, credits_text, (Vector2){credits_x, credits_y}, credits_size, 1, TEXT_DIM);
+}
 
 internal void
 ui_draw_info_panel(app_state_t *app_state)

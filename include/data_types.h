@@ -5,8 +5,8 @@
 #include "raylib_includes.h"
 
 // Window defaults
-#define INITIAL_WINDOW_WIDTH 1280
-#define INITIAL_WINDOW_HEIGHT 720
+#define INITIAL_WINDOW_WIDTH 1920
+#define INITIAL_WINDOW_HEIGHT 1080
 
 //  Camera constants
 #define CAMERA_FOV 85.0f
@@ -155,6 +155,7 @@ typedef struct
     u64 cpu_memory_allocated;
     bool debug;
     bool data_is_loaded;
+    bool show_start_screen;
     bool is_paused;
     bool cursor_enabled;
     bool show_help;
@@ -162,6 +163,7 @@ typedef struct
     f64 fps_display;
     f64 fps_update_timer;
     Font main_font;
+    Font start_screen_font;
     i32 window_width;
     i32 window_height;
 

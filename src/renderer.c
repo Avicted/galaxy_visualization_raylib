@@ -179,6 +179,13 @@ void renderer_draw_frame(app_state_t *app_state)
     const Color clear_color = (Color){4, 4, 8, 255};
     ClearBackground(clear_color);
 
+    if (app_state->show_start_screen)
+    {
+        ui_draw_start_screen(app_state);
+        EndDrawing();
+        return;
+    }
+
     renderer_draw_3d(app_state);
     ui_draw(app_state);
 

@@ -108,6 +108,7 @@ echo "=== Binary Assets (compressed) ==="
 
 # Font
 generate_compressed_header "assets/fonts/Perfect DOS VGA 437.ttf" "font_perfect_dos"
+generate_compressed_header "assets/fonts/Abuget.ttf" "font_abuget"
 
 # Icon
 generate_compressed_header "assets/images/app_icon.png" "icon_app"
