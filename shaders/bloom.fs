@@ -10,8 +10,8 @@ out vec4 finalColor;
 
 const float THRESHOLD = 0.2;
 const float SOFT_KNEE = 0.5;
-const float INTENSITY = 3.5;
-const float KERNEL_SCALE = 24.0;
+const float INTENSITY = 4.5;
+const float KERNEL_SCALE = 32.0;
 
 vec3 sampleBright(vec2 uv)
 {

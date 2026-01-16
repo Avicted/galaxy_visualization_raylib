@@ -62,6 +62,7 @@ app_update(app_state_t *app_state, f64 dt)
         CloseWindow();
     }
 
+    draw_data_t prev_data = app_state->data_to_draw;
     if (IsKeyPressed(KEY_ONE))
     {
         app_state->data_to_draw = DRAW_DATA_A;
@@ -80,6 +81,18 @@ app_update(app_state_t *app_state, f64 dt)
     if (IsKeyPressed(KEY_FOUR))
     {
         app_state->data_to_draw = DRAW_DATA_REDSHIFT;
+    }
+
+    if (app_state->data_to_draw != prev_data)
+    {
+        bool prev_course = (prev_data == DRAW_DATA_A || prev_data == DRAW_DATA_B || prev_data == DRAW_DATA_ALL);
+        bool next_course = (app_state->data_to_draw == DRAW_DATA_A || app_state->data_to_draw == DRAW_DATA_B || app_state->data_to_draw == DRAW_DATA_ALL);
+        if (prev_course != next_course)
+        {
+            app_state->is_paused = false;
+            app_state->main_camera.fovy = CAMERA_FOV;
+            app_state->camera_zoom = CAMERA_INITIAL_ZOOM;
+        }
     }
 
     if (IsKeyPressed(KEY_R))
