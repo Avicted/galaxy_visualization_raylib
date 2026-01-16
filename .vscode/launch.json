@@ -5,7 +5,7 @@
             "name": "Debug with Meson",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/galaxy_visualization_raylib",
+            "program": "${workspaceFolder}/build/Galaxy_Visualization_Linux_v0.5.2",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",

@@ -69,7 +69,7 @@ if [ "$STATIC_RAYLIB" = true ]; then
 
     if [ ! -f "$RAYLIB_STATIC_LIB" ]; then
         echo "=== Building raylib static library (subproject)... ==="
-        make -C "$RAYLIB_MAKE_DIR" PLATFORM=PLATFORM_DESKTOP CC="$CC"
+        make -C "$RAYLIB_MAKE_DIR" PLATFORM=PLATFORM_DESKTOP CC="$CC" CFLAGS="-w"
     fi
 
     INCLUDE_DIRS="$INCLUDE_DIRS -I$RAYLIB_SUBPROJECT_DIR/src"
