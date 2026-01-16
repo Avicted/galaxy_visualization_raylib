@@ -81,9 +81,7 @@
 #define CAMERA_NEAR_PLANE 0.1
 #define CAMERA_FAR_PLANE 5000.0
 
-#define LIGHT_POSITION_X 1000.0f
-#define LIGHT_POSITION_Y 1000.0f
-#define SHININESS_DEFAULT 1.0f
+#define SHININESS_DEFAULT 0.2f
 
 #define FONT_LOAD_SIZE 128
 #define FONT_GLYPH_COUNT 95 // ASCII 32-126 only (faster GetGlyphIndex lookup)

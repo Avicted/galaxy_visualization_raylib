@@ -32,7 +32,7 @@ i32 shaders_init(app_state_t *app_state)
         f64 diffuse_value[4] = {1.0, 1.0, 1.0, 1.0};
         SetShaderValue(app_state->custom_shader, color_diffuse_loc, &diffuse_value, SHADER_UNIFORM_VEC4);
 
-        CreateLight(LIGHT_DIRECTIONAL, (Vector3){LIGHT_POSITION_X, LIGHT_POSITION_Y, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
+        CreateLight(LIGHT_POINT, Vector3Zero(), Vector3Zero(), WHITE, app_state->custom_shader);
     }
 
     {
