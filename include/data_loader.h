@@ -11,4 +11,4 @@ usize data_loader_read_arcmin_file(const char *file_name, arcmin_data_t *data_po
 usize data_loader_read_redshift_file(const char *file_name, redshift_galaxy_t *galaxies, ul max_galaxies);
 usize data_loader_read_saga_dr3_file(const char *file_name, redshift_galaxy_t *galaxies, ul max_galaxies);
 
-#endif
+#endif // DATA_LOADER_H

@@ -16,6 +16,13 @@ i32 shaders_init(app_state_t *app_state)
     app_state->custom_shader.locs[SHADER_LOC_VECTOR_VIEW] = GetShaderLocation(app_state->custom_shader, "viewPos");
     app_state->custom_shader.locs[SHADER_LOC_MATRIX_MODEL] = GetShaderLocationAttrib(app_state->custom_shader, "instanceTransform");
 
+    app_state->bloom_shader = asset_io_load_shader(ASSET_SHADER_BLOOM_VS, ASSET_SHADER_BLOOM_FS);
+    if (app_state->bloom_shader.id == 0 || app_state->bloom_shader.locs == NULL)
+    {
+        fprintf(stderr, "[ERROR] Failed to load bloom shader\n");
+        return 1;
+    }
+
     {
         i32 ambient_location = GetShaderLocation(app_state->custom_shader, "ambient");
         f32 ambient_value[4] = {1.0f, 1.0f, 1.0f, 1.0f};
@@ -25,7 +32,7 @@ i32 shaders_init(app_state_t *app_state)
         f64 diffuse_value[4] = {1.0, 1.0, 1.0, 1.0};
         SetShaderValue(app_state->custom_shader, color_diffuse_loc, &diffuse_value, SHADER_UNIFORM_VEC4);
 
-        CreateLight(LIGHT_DIRECTIONAL, (Vector3){LIGHT_POSITION_X, LIGHT_POSITION_Y, 0.0f}, Vector3Zero(), WHITE, app_state->custom_shader);
+        CreateLight(LIGHT_POINT, Vector3Zero(), Vector3Zero(), WHITE, app_state->custom_shader);
     }
 
     {

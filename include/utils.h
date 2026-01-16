@@ -6,4 +6,4 @@
 const char *format_u64_suffix(u64 value);
 void print_memory_usage(app_state_t *app_state);
 
-#endif
+#endif // UTILS_H

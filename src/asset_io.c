@@ -36,6 +36,22 @@ global_variable const asset_info_t g_asset_info[ASSET_ID_COUNT] = {
         .raw_size = 0,
 #endif
     },
+    [ASSET_SHADER_BLOOM_VS] = {
+        .disk_path = "./shaders/bloom.vs",
+        .is_text = true,
+#ifdef EMBED_ASSETS
+        .raw_data = (const unsigned char *)shader_bloom_vs_data,
+        .raw_size = 0,
+#endif
+    },
+    [ASSET_SHADER_BLOOM_FS] = {
+        .disk_path = "./shaders/bloom.fs",
+        .is_text = true,
+#ifdef EMBED_ASSETS
+        .raw_data = (const unsigned char *)shader_bloom_fs_data,
+        .raw_size = 0,
+#endif
+    },
     [ASSET_FONT_PERFECT_DOS] = {
         .disk_path = "./assets/fonts/Perfect DOS VGA 437.ttf",
         .is_text = false,

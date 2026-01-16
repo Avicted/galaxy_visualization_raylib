@@ -16,10 +16,18 @@
 internal i32
 app_init_platform(app_state_t *app_state)
 {
-    SetTraceLogLevel(LOG_WARNING);
+    SetTraceLogLevel(LOG_DEBUG);
     SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     const char *window_title = TextFormat("Galaxy Visualization v%s", APP_VERSION);
     InitWindow(app_state->window_width, app_state->window_height, window_title);
+
+    // Set the windows size and render texture size to match the current monitor
+    const i32 current_monitor = GetCurrentMonitor();
+    const i32 monitor_width = GetMonitorWidth(current_monitor);
+    const i32 monitor_height = GetMonitorHeight(current_monitor);
+    SetWindowSize(monitor_width, monitor_height);
+    app_state->window_width = monitor_width;
+    app_state->window_height = monitor_height;
 
     {
         Image icon = asset_io_load_image(ASSET_ICON_APP, ".png");
@@ -62,6 +70,7 @@ app_update(app_state_t *app_state, f64 dt)
         CloseWindow();
     }
 
+    draw_data_t prev_data = app_state->data_to_draw;
     if (IsKeyPressed(KEY_ONE))
     {
         app_state->data_to_draw = DRAW_DATA_A;
@@ -82,9 +91,30 @@ app_update(app_state_t *app_state, f64 dt)
         app_state->data_to_draw = DRAW_DATA_REDSHIFT;
     }
 
+    if (app_state->data_to_draw != prev_data)
+    {
+        bool prev_course = (prev_data == DRAW_DATA_A || prev_data == DRAW_DATA_B || prev_data == DRAW_DATA_ALL);
+        bool next_course = (app_state->data_to_draw == DRAW_DATA_A || app_state->data_to_draw == DRAW_DATA_B || app_state->data_to_draw == DRAW_DATA_ALL);
+        if (prev_course != next_course)
+        {
+            app_state->is_paused = false;
+            app_state->main_camera.fovy = CAMERA_FOV;
+            app_state->camera_zoom = CAMERA_INITIAL_ZOOM;
+        }
+    }
+
     if (IsKeyPressed(KEY_R))
     {
         app_state->is_paused = !app_state->is_paused;
+        if (app_state->data_to_draw != DRAW_DATA_REDSHIFT)
+        {
+            app_state->camera_zoom = CAMERA_INITIAL_ZOOM;
+        }
+        else if (!app_state->is_paused)
+        {
+            app_state->camera_zoom = CAMERA_INITIAL_ZOOM;
+        }
+        app_state->main_camera.fovy = CAMERA_FOV;
         printf("[DEBUG] Paused: %s\n", app_state->is_paused ? "yes" : "no");
     }
 
@@ -93,13 +123,27 @@ app_update(app_state_t *app_state, f64 dt)
         app_state->show_help = !app_state->show_help;
     }
 
+    if (IsKeyPressed(KEY_B))
+    {
+        app_state->bloom_enabled = !app_state->bloom_enabled;
+    }
+
     camera_update(app_state, dt);
 
     f64 scroll = GetMouseWheelMove();
     if (scroll != 0.0f)
     {
-        const f64 zoom_change = -CAMERA_ZOOM_SPEED;
-        app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * zoom_change * dt, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX);
+        if (app_state->is_paused)
+        {
+            const f64 fov_change = -CAMERA_ZOOM_SPEED * 4.0;
+            app_state->main_camera.fovy = Clamp(app_state->main_camera.fovy + scroll * fov_change * dt,
+                                                CAMERA_FOV_MIN, CAMERA_FOV_MAX);
+        }
+        else if (app_state->data_to_draw == DRAW_DATA_REDSHIFT)
+        {
+            const f64 zoom_change = -CAMERA_ZOOM_SPEED;
+            app_state->camera_zoom = Clamp(app_state->camera_zoom + scroll * zoom_change * dt, CAMERA_ZOOM_MIN, CAMERA_ZOOM_MAX);
+        }
     }
 
     if (dt > 0.0)
@@ -166,7 +210,8 @@ i32 app_init(app_state_t *app_state)
     app_state->debug = prev_debug;
     app_state->cursor_enabled = true;
     app_state->show_start_screen = true;
-    app_state->show_help = false; // Hidden by default for better performance
+    app_state->show_help = true;
+    app_state->bloom_enabled = true;
 
     app_state->main_camera.up = (Vector3){0.0f, 1.0f, 0.0f};
     app_state->main_camera.fovy = CAMERA_FOV;
@@ -268,6 +313,18 @@ void app_cleanup(app_state_t *app_state)
     if (app_state->material_instance.shader.id)
     {
         UnloadShader(app_state->material_instance.shader);
+    }
+    if (app_state->bloom_shader.id)
+    {
+        UnloadShader(app_state->bloom_shader);
+    }
+    if (app_state->scene_target.id)
+    {
+        UnloadRenderTexture(app_state->scene_target);
+    }
+    if (app_state->glow_target.id)
+    {
+        UnloadRenderTexture(app_state->glow_target);
     }
 
     if (app_state->main_font.texture.id)
