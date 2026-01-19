@@ -47,7 +47,7 @@ for arg in "$@"; do
 done
 
 CC=clang
-CFLAGS="-std=c99 -O3 -march=native -Wall -Wextra -Werror -Wpedantic"
+CFLAGS="-std=c99 -O3 -Wall -Wextra -Werror -Wpedantic"
 LDLIBS="-lm"
 
 APP_VERSION=$(sed -nE "s/.*version[[:space:]]*:[[:space:]]*'([^']+)'.*/\1/p" meson.build | head -n 1)

@@ -137,8 +137,6 @@ Or using build.sh:
 | Embedded (`--embed` or `-Dembed_assets=true`) | All assets compressed into binary | ~6 MB |
 | Static raylib (`--static` or `-Draylib_static=true`) | raylib linked statically, system libs dynamic | Varies |
 
-Notes:
-- Windows cross-builds avoid `-march=native` to maximize compatibility (e.g., Wine).
 
 The embedded binary includes:
 - Fonts, shaders, and 3D models

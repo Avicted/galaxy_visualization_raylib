@@ -1,5 +1,5 @@
 project('galaxy_visualization_raylib', 'c',
-  version : '0.5.2',
+  version : '0.5.3',
   default_options : [
     'c_std=c99',
     
@@ -33,10 +33,6 @@ endif
 embed_assets = get_option('embed_assets')
 extra_c_args = ['-DAPP_VERSION="' + meson.project_version() + '"']
 platform_c_args = []
-
-if host_machine.system() != 'windows'
-  platform_c_args += ['-march=native']
-endif
 
 extra_c_args += ['-Werror']
 

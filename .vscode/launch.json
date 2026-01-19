@@ -5,7 +5,7 @@
             "name": "Debug with Meson",
             "type": "cppdbg",
             "request": "launch",
-            "program": "${workspaceFolder}/build/Galaxy_Visualization_Linux_v0.5.2",
+            "program": "${workspaceFolder}/build/Galaxy_Visualization_Linux_v0.5.3",
             "args": [],
             "stopAtEntry": false,
             "cwd": "${workspaceFolder}",
