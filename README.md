@@ -4,13 +4,13 @@
 
 This project visualizes 100,000 real galaxies in blue and 100,000 randomly distributed galaxies in red. The data is sourced from the GPU programming course at: [Åbo Akademi University](https://studiehandboken.abo.fi/en/course/IT00CG19/19162?period=2024-2027)
 
-The assignment is to use parallel programming with CUDA (or HIP) to calculate 10 billion angles between galaxies and prove they are not randomly distributed. 
+The assignment is to use parallel programming with CUDA (or HIP) to calculate 10 billion (10 000 000 000) angles between galaxies and prove they are not randomly distributed. 
 The students must leverage the GPU for these calculations on their own using a smaller compute cluster or supercomputer.
 
 ### Note:
 - The students have to prove this on their own.
 - The expected runtime for the calculation is approximately 3 seconds.
-    - It is possible to optimize the runtime to 0.85 seconds on a single GPU (my own solution tested with one AMD RX 6900 XT).
+    - It is possible to optimize the runtime to 0.33 seconds (275 ms kernel runtime) on a single GPU (my own solution tested with one AMD RX 6900 XT).
 - **This program is a visualization of the data, not the solution to the assignment.**
 - Additional redshift data from various surveys has been included for visualization purposes.
 
